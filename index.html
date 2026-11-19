@@ -657,12 +657,16 @@ svg{display:block}
 "use strict";
 /* ═══════════ Catálogos ═══════════ */
 const ROLES={pastor:{label:"Pastor Principal",color:"#9a1b32"},liderazgo:{label:"Liderazgo",color:"#d4af37"},equipo:{label:"Equipo de Redes",color:"#7a1427"}};
-const AREAS={diseno:{label:"Diseño",color:"var(--ar-dis)"},redes:{label:"Redes",color:"var(--ar-red)"},copy:{label:"Copy",color:"var(--ar-cop)"}};
-const STATUS={pendiente:{label:"Pendiente",color:"var(--st-pend)"},proceso:{label:"En proceso",color:"var(--st-proc)"},revision:{label:"En revisión",color:"var(--st-rev)"},aprobado:{label:"Aprobado",color:"var(--st-apro)"},publicado:{label:"Publicado",color:"var(--st-pub)"}};
+const AREAS={diseno:{label:"Diseño",color:"var(--ar-dis)"},redes:{label:"Redes",color:"var(--ar-red)"}};
+const STATUS={porhacer:{label:"Por hacer",color:"#e5484d"},edicion:{label:"Pendiente por edición",color:"#e0a32e"},revision:{label:"En revisión",color:"#8b5cf6"},publicar:{label:"Pendiente por publicar",color:"#0a84ff"},programar:{label:"Por programar",color:"#14b8a6"},completado:{label:"Completado",color:"#2fa35a"}};
+const STATUS_MIG={pendiente:"porhacer",proceso:"edicion",aprobado:"publicar",publicado:"completado"};
+function migStatus(s){return STATUS[s]?s:(STATUS_MIG[s]||"porhacer");}
+function migArea(a){return AREAS[a]?a:"redes";}
+function doneStyle(t){return t&&t.status==="completado"?"text-decoration:line-through;opacity:.62":"";}
 const TYPES=["Reel","Carrusel","Historia","Post","Flyer","Video"];
 const NETWORKS={instagram:{label:"Instagram",color:"#d6336c"},facebook:{label:"Facebook",color:"#1877f2"},tiktok:{label:"TikTok",color:"#9aa0a6"},youtube:{label:"YouTube",color:"#ff3b30"},whatsapp:{label:"WhatsApp",color:"#25d366"}};
 const PRIORITY={alta:{label:"Alta",color:"var(--prio-alta)"},media:{label:"Media",color:"var(--prio-media)"},baja:{label:"Baja",color:"var(--prio-baja)"}};
-const IDEA_TYPES=["Trend","Concepto","Audio viral","Referencia"];
+const IDEA_TYPES=["Concepto"];
 const IDEA_ST={nueva:{label:"Nueva"},evaluando:{label:"En evaluación"},aprobada:{label:"Aprobada"},convertida:{label:"Convertida"}};
 const SERVICE_ROLES=["Fotografía","Video / Reel","Historias en vivo","Transmisión","Publicaciones"];
 const AVAIL={si:{label:"Disponible",color:"var(--st-apro)"},no:{label:"No disponible",color:"var(--wine)"}};
@@ -686,13 +690,13 @@ const SEED={
   ],
   tasks:[
     {id:"t1",title:"Reel – Testimonio de bautismo",type:"Reel",area:"redes",status:"revision",priority:"alta",networks:["instagram","tiktok"],desc:"Editar el reel con el testimonio de Andrea para publicar el domingo. Música suave, subtítulos en español.",caption:"«Nada es imposible para Dios» 🙌 El testimonio de Andrea nos recuerda que siempre hay un nuevo comienzo. #VinoNuevo",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(1)),publish:iso(dayOffset(3)),tags:["testimonio","domingo"],checklist:[{t:"Seleccionar las mejores tomas",d:true},{t:"Agregar música y subtítulos",d:true},{t:"Revisión de liderazgo",d:false},{t:"Programar publicación",d:false}],links:[{name:"Material en Drive",url:"#"},{name:"Guion / copy",url:"#"}],comments:[{by:"u3",time:"Hace 20 min",body:"Quedó bellísimo. Solo bajen un poquito la música en la parte del testimonio."}]},
-    {id:"t2",title:"Carrusel – Serie 'Vino Nuevo'",type:"Carrusel",area:"diseno",status:"proceso",priority:"media",networks:["instagram","facebook"],desc:"Diseñar 5 slides para la nueva serie de predicaciones. Paleta dorada, fotos del servicio.",caption:"Arranca la serie «Vino Nuevo» 🍷 Cada domingo un mensaje fresco. Te esperamos.",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(2)),publish:iso(dayOffset(4)),tags:["serie","predicación"],checklist:[{t:"Definir portada",d:true},{t:"Diseñar los 5 slides",d:false},{t:"Escribir el copy",d:false}],links:[{name:"Referencias visuales",url:"#"}],comments:[]},
-    {id:"t3",title:"Flyer – Reunión de jóvenes",type:"Flyer",area:"diseno",status:"aprobado",priority:"alta",networks:["instagram","whatsapp"],desc:"Arte para el encuentro de jóvenes del viernes. Aprobado por liderazgo, listo para publicar.",caption:"¡Jóvenes, nos vemos el viernes! 🔥 7:00 PM. Trae a un amigo.",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(0)),publish:iso(dayOffset(1)),tags:["jóvenes","evento"],checklist:[{t:"Diseñar arte",d:true},{t:"Aprobar con liderazgo",d:true},{t:"Versión historia y post",d:true}],links:[],comments:[]},
-    {id:"t4",title:"Copy – Versículo de la semana",type:"Post",area:"copy",status:"pendiente",priority:"baja",networks:["instagram","facebook"],desc:"Redactar el texto del versículo semanal y la reflexión corta para el post del lunes.",caption:"",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(3)),publish:iso(dayOffset(5)),tags:["versículo"],checklist:[{t:"Elegir versículo",d:false},{t:"Escribir reflexión",d:false}],links:[],comments:[]},
-    {id:"t5",title:"Historia – Invitación al servicio",type:"Historia",area:"redes",status:"publicado",priority:"media",networks:["instagram"],desc:"Historia de recordatorio del servicio dominical. Publicada el sábado en la noche.",caption:"Mañana nos encontramos en la casa de Dios 🙏 10:00 AM",assignees:{diseno:"u5",copy:"u7",publica:"u7"},due:iso(dayOffset(-1)),publish:iso(dayOffset(-1)),tags:["servicio"],checklist:[{t:"Diseñar historia",d:true},{t:"Publicar sábado",d:true}],links:[],comments:[]},
-    {id:"t6",title:"Video – Resumen del domingo",type:"Video",area:"redes",status:"proceso",priority:"media",networks:["youtube","instagram"],desc:"Editar el video resumen con los mejores momentos del servicio para publicar entre semana.",caption:"",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(4)),publish:iso(dayOffset(6)),tags:["resumen","servicio"],checklist:[{t:"Recopilar tomas",d:true},{t:"Edición",d:false},{t:"Música",d:false}],links:[{name:"Tomas sin editar",url:"#"}],comments:[]},
+    {id:"t2",title:"Carrusel – Serie 'Vino Nuevo'",type:"Carrusel",area:"diseno",status:"edicion",priority:"media",networks:["instagram","facebook"],desc:"Diseñar 5 slides para la nueva serie de predicaciones. Paleta dorada, fotos del servicio.",caption:"Arranca la serie «Vino Nuevo» 🍷 Cada domingo un mensaje fresco. Te esperamos.",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(2)),publish:iso(dayOffset(4)),tags:["serie","predicación"],checklist:[{t:"Definir portada",d:true},{t:"Diseñar los 5 slides",d:false},{t:"Escribir el copy",d:false}],links:[{name:"Referencias visuales",url:"#"}],comments:[]},
+    {id:"t3",title:"Flyer – Reunión de jóvenes",type:"Flyer",area:"diseno",status:"publicar",priority:"alta",networks:["instagram","whatsapp"],desc:"Arte para el encuentro de jóvenes del viernes. Aprobado por liderazgo, listo para publicar.",caption:"¡Jóvenes, nos vemos el viernes! 🔥 7:00 PM. Trae a un amigo.",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(0)),publish:iso(dayOffset(1)),tags:["jóvenes","evento"],checklist:[{t:"Diseñar arte",d:true},{t:"Aprobar con liderazgo",d:true},{t:"Versión historia y post",d:true}],links:[],comments:[]},
+    {id:"t4",title:"Copy – Versículo de la semana",type:"Post",area:"redes",status:"porhacer",priority:"baja",networks:["instagram","facebook"],desc:"Redactar el texto del versículo semanal y la reflexión corta para el post del lunes.",caption:"",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(3)),publish:iso(dayOffset(5)),tags:["versículo"],checklist:[{t:"Elegir versículo",d:false},{t:"Escribir reflexión",d:false}],links:[],comments:[]},
+    {id:"t5",title:"Historia – Invitación al servicio",type:"Historia",area:"redes",status:"completado",priority:"media",networks:["instagram"],desc:"Historia de recordatorio del servicio dominical. Publicada el sábado en la noche.",caption:"Mañana nos encontramos en la casa de Dios 🙏 10:00 AM",assignees:{diseno:"u5",copy:"u7",publica:"u7"},due:iso(dayOffset(-1)),publish:iso(dayOffset(-1)),tags:["servicio"],checklist:[{t:"Diseñar historia",d:true},{t:"Publicar sábado",d:true}],links:[],comments:[]},
+    {id:"t6",title:"Video – Resumen del domingo",type:"Video",area:"redes",status:"edicion",priority:"media",networks:["youtube","instagram"],desc:"Editar el video resumen con los mejores momentos del servicio para publicar entre semana.",caption:"",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(4)),publish:iso(dayOffset(6)),tags:["resumen","servicio"],checklist:[{t:"Recopilar tomas",d:true},{t:"Edición",d:false},{t:"Música",d:false}],links:[{name:"Tomas sin editar",url:"#"}],comments:[]},
     {id:"t7",title:"Carrusel – Anuncios de la semana",type:"Carrusel",area:"diseno",status:"revision",priority:"alta",networks:["instagram","facebook","whatsapp"],desc:"Slides con los anuncios: célula, ayuno y ofrenda especial. En revisión de liderazgo.",caption:"Anuncios de la semana 📌 Desliza para verlos todos.",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(2)),publish:iso(dayOffset(3)),tags:["anuncios"],checklist:[{t:"Diseñar slides",d:true},{t:"Revisión",d:false}],links:[],comments:[]},
-    {id:"t8",title:"Post – Frase de la predicación",type:"Post",area:"copy",status:"pendiente",priority:"baja",networks:["instagram"],desc:"Sacar una frase potente de la predicación del domingo para un post del miércoles.",caption:"",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(2)),publish:iso(dayOffset(2)),tags:["frase"],checklist:[],links:[],comments:[]},
+    {id:"t8",title:"Post – Frase de la predicación",type:"Post",area:"redes",status:"porhacer",priority:"baja",networks:["instagram"],desc:"Sacar una frase potente de la predicación del domingo para un post del miércoles.",caption:"",assignees:{diseno:"u5",copy:"u6",publica:"u7"},due:iso(dayOffset(2)),publish:iso(dayOffset(2)),tags:["frase"],checklist:[],links:[],comments:[]},
   ],
   ideas:[
     {id:"i1",type:"Trend",title:"Transición al ritmo de la canción",desc:"Usar el trend de transición con el drop de la canción del domingo para un reel dinámico del equipo de música.",by:"u6",likes:["u2","u5"],status:"nueva",comments:[{by:"u5",time:"Hace 1 h",body:"Me encanta, yo lo edito."}]},
@@ -733,7 +737,7 @@ async function notify(payload){try{const r=await sb.functions.invoke('send-notic
 function notifyTaskAssigned(t){if(!t||!t.assignees)return;const ids=[...new Set([t.assignees.diseno,t.assignees.copy,t.assignees.publica])].filter(Boolean).filter(id=>id!==me().id);const emails=ids.map(id=>{const u=user(id);return u&&u.email;}).filter(Boolean);if(!emails.length)return;notify({to:emails,subject:`Nueva tarea: ${t.title}`,heading:'Te asignaron una tarea',intro:`${me().name} te asignó una pieza del equipo de redes. Aquí están los detalles:`,rows:[['Tarea',t.title],['Tipo',t.type||'—'],['Entrega',t.due?fmtDate(t.due):'Por definir'],['Publica',t.publish?fmtDate(t.publish):'Por definir']],ctaText:'Ver en la app',ctaUrl:APP_URL,footnote:'Entra a la app para ver todos los detalles y marcar tu avance.'});}
 function notifyMeeting(m,invites,modality){const emails=(invites||[]).map(i=>i.email).filter(Boolean).filter(e=>!me().email||e.toLowerCase()!==me().email.toLowerCase());if(!emails.length)return;notify({to:emails,subject:`Reunión: ${m.title}`,heading:'Te invitamos a una reunión',intro:`${me().name} convocó una reunión del equipo de redes. Confirma tu asistencia desde la app.`,rows:[['Reunión',m.title],['Fecha',m.date?fmtDate(m.date):'Por definir'],['Hora',m.time||'—'],['Modalidad',modality||m.modality||'—'],['Agenda',m.agenda||'Por definir']],ctaText:'Abrir la app',ctaUrl:APP_URL});}
 function uid(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(16).slice(2);}
-let S={users:[],tasks:[],ideas:[],meetings:[],services:[],pastoralComments:[],publicComments:[],notifications:[],currentUserId:null,
+let S={users:[],tasks:[],ideas:[],meetings:[],services:[],monthlyServers:{},pastoralComments:[],publicComments:[],notifications:[],currentUserId:null,
   ui:{view:"dashboard",calMode:"semana",filterArea:null,filterStatus:null,mine:false,monthOffset:0,taskView:"tarjetas",ideaFilter:null,ideaView:"tarjetas"}};
 function user(id){return S.users.find(u=>u.id===id)||{id,name:"—",sub:"",color:"#888",role:"equipo"};}
 function me(){return user(S.currentUserId)||{id:null,name:"—",role:"equipo",sub:"",planner:false};}
@@ -748,7 +752,7 @@ function can(w){const r=me().role;
 /* ===== Mapeo base de datos <-> app ===== */
 const _arr=v=>Array.isArray(v)?v:[];
 function relTime(ts){if(!ts)return"";const d=new Date(ts),s=(Date.now()-d.getTime())/1000;if(s<60)return"Ahora";if(s<3600)return"Hace "+Math.floor(s/60)+" min";if(s<86400)return"Hace "+Math.floor(s/3600)+" h";return d.toLocaleDateString('es');}
-function rowToTask(r){return{id:r.id,title:r.title,type:r.type,area:r.area,status:r.status,priority:r.priority,networks:_arr(r.networks),tags:_arr(r.tags),desc:r.description||"",caption:r.caption||"",assignees:{diseno:r.assignee_diseno,copy:r.assignee_copy,publica:r.assignee_publica},due:r.due_date,publish:r.publish_date,checklist:_arr(r.checklist),links:_arr(r.links),comments:_arr(r.comments),activity:_arr(r.activity),created_by:r.created_by};}
+function rowToTask(r){return{id:r.id,title:r.title,type:r.type,area:migArea(r.area),status:migStatus(r.status),priority:r.priority,networks:_arr(r.networks),tags:_arr(r.tags),desc:r.description||"",caption:r.caption||"",assignees:{diseno:r.assignee_diseno,copy:r.assignee_copy,publica:r.assignee_publica},due:r.due_date,publish:r.publish_date,checklist:_arr(r.checklist),links:_arr(r.links),comments:_arr(r.comments),activity:_arr(r.activity),created_by:r.created_by};}
 function taskToRow(t){return{id:t.id,title:t.title,type:t.type,area:t.area,status:t.status,priority:t.priority,networks:_arr(t.networks),tags:_arr(t.tags),description:t.desc||"",caption:t.caption||"",assignee_diseno:(t.assignees&&t.assignees.diseno)||null,assignee_copy:(t.assignees&&t.assignees.copy)||null,assignee_publica:(t.assignees&&t.assignees.publica)||null,due_date:t.due||null,publish_date:t.publish||null,checklist:_arr(t.checklist),links:_arr(t.links),comments:_arr(t.comments),activity:_arr(t.activity),created_by:t.created_by||S.currentUserId};}
 function rowToIdea(r){return{id:r.id,type:r.type,title:r.title,desc:r.description||"",by:r.author_id,likes:_arr(r.likes),status:r.status,comments:_arr(r.comments)};}
 function ideaToRow(i){return{id:i.id,type:i.type,title:i.title,description:i.desc||"",author_id:i.by||null,likes:_arr(i.likes),status:i.status,comments:_arr(i.comments)};}
@@ -783,6 +787,7 @@ async function loadAll(authUser){
     S.pastoralComments=(await q('pastoral_comments','created_at')).map(rowToPastoral);
     S.publicComments=(await q('public_comments','created_at')).map(rowToPublic);
     S.notifications=(await q('notifications','created_at')).map(rowToNotif).reverse();
+    try{const{data:ms}=await sb.from('monthly_servers').select('*');S.monthlyServers={};(ms||[]).forEach(r=>{S.monthlyServers[r.month]=r.roles||{};});}catch(_){S.monthlyServers=S.monthlyServers||{};}
   }catch(e){console.error(e);if(window.toast)toast('Error cargando: '+(e.message||e));}
 }
 
@@ -793,6 +798,7 @@ function removeTask(id){_w(sb.from('tasks').delete().eq('id',id));}
 function saveIdea(i){_w(sb.from('ideas').upsert(ideaToRow(i)),'No se pudo guardar la idea');}
 function saveMeeting(m){_w(sb.from('meetings').upsert(meetingToRow(m)),'No se pudo guardar la reunión');}
 function saveService(s){_w(sb.from('services').upsert(serviceToRow(s)),'No se pudo guardar el servicio');}
+function saveMonthlyServers(month,roles){_w(sb.from('monthly_servers').upsert({month,roles,updated_at:new Date().toISOString()}),'No se pudo guardar los servidores');}
 function addPastoral(p){_w(sb.from('pastoral_comments').insert(pastoralToRow(p)),'No se pudo enviar');}
 function addPublic(c){_w(sb.from('public_comments').insert(publicToRow(c)),'No se pudo comentar');}
 function addNotif(n){_w(sb.from('notifications').insert(notifToRow(n)));}
@@ -864,7 +870,7 @@ const I={
 
 const NAV_MAIN=[
   {id:"dashboard",label:"Dashboard",icon:I.dash},
-  {id:"tareas",label:"Tareas",icon:I.tasks,badge:()=>S.tasks.filter(t=>t.status!=="publicado").length},
+  {id:"tareas",label:"Tareas",icon:I.tasks,badge:()=>S.tasks.filter(t=>t.status!=="completado").length},
   {id:"calendario",label:"Calendario",icon:I.cal},
   {id:"ideas",label:"Banco de ideas",icon:I.bulb},
   {id:"reuniones",label:"Reuniones",icon:I.users},
@@ -919,9 +925,9 @@ function render(){
 /* ═══════════ DASHBOARD ═══════════ */
 function dashStats(){
   const all=S.tasks,mine=myTasks();const n=(a,st)=>a.filter(t=>t.status===st).length;const r=me().role;
-  if(r==="equipo")return{greet:`¡Épale, ${firstName(me().name)}! 👋`,sub:"Estas son tus tareas y entregas de la semana.",cards:[{feat:true,lbl:"Mis tareas",val:mine.length,foot:"Asignadas a ti"},{lbl:"Para entregar",val:mine.filter(t=>daysUntil(t.due)<=1&&t.status!=="publicado").length,foot:"En los próximos días"},{lbl:"En revisión",val:n(mine,"revision"),foot:"Esperando aprobación"},{lbl:"Publicadas",val:n(mine,"publicado"),foot:"Buen trabajo"}]};
-  if(r==="pastor")return{greet:`Bendiciones, ${firstName(me().name)} 🙏`,sub:"Resumen de los contenidos de la iglesia esta semana.",cards:[{feat:true,lbl:"Contenidos de la semana",val:all.filter(t=>Math.abs(daysUntil(t.publish))<=7).length,foot:"Programados"},{lbl:"Por publicar",val:all.filter(t=>t.status!=="publicado").length,foot:"En preparación"},{lbl:"En revisión",val:n(all,"revision"),foot:"Para tu lectura"},{lbl:"Ideas nuevas",val:S.ideas.length,foot:"En el banco"}]};
-  return{greet:`Buenas, ${firstName(me().name)} 👋`,sub:"Panorama general del equipo de redes.",cards:[{feat:true,lbl:"Tareas totales",val:all.length,foot:"Este mes"},{lbl:"Publicadas",val:n(all,"publicado"),foot:"Ya en redes"},{lbl:"Requieren tu aprobación",val:n(all,"revision"),foot:"En revisión"},{lbl:"Pendientes",val:n(all,"pendiente"),foot:"Sin empezar"}]};
+  if(r==="equipo")return{greet:`¡Épale, ${firstName(me().name)}! 👋`,sub:"Estas son tus tareas y entregas de la semana.",cards:[{feat:true,lbl:"Mis tareas",val:mine.length,foot:"Asignadas a ti"},{lbl:"Para entregar",val:mine.filter(t=>daysUntil(t.due)<=1&&t.status!=="completado").length,foot:"En los próximos días"},{lbl:"En revisión",val:n(mine,"revision"),foot:"Esperando aprobación"},{lbl:"Publicadas",val:n(mine,"completado"),foot:"Buen trabajo"}]};
+  if(r==="pastor")return{greet:`Bendiciones, ${firstName(me().name)} 🙏`,sub:"Resumen de los contenidos de la iglesia esta semana.",cards:[{feat:true,lbl:"Contenidos de la semana",val:all.filter(t=>Math.abs(daysUntil(t.publish))<=7).length,foot:"Programados"},{lbl:"Por publicar",val:all.filter(t=>t.status!=="completado").length,foot:"En preparación"},{lbl:"En revisión",val:n(all,"revision"),foot:"Para tu lectura"},{lbl:"Ideas nuevas",val:S.ideas.length,foot:"En el banco"}]};
+  return{greet:`Buenas, ${firstName(me().name)} 👋`,sub:"Panorama general del equipo de redes.",cards:[{feat:true,lbl:"Tareas totales",val:all.length,foot:"Este mes"},{lbl:"Publicadas",val:n(all,"completado"),foot:"Ya en redes"},{lbl:"Requieren tu aprobación",val:n(all,"revision"),foot:"En revisión"},{lbl:"Pendientes",val:n(all,"porhacer"),foot:"Sin empezar"}]};
 }
 function viewDashboard(){
   const wrap=el("div");const d=dashStats();
@@ -951,20 +957,20 @@ function analyticsCard(){
 }
 function teamCollabCard(){
   const c=el("div","card sec-card");
-  const rows=S.tasks.filter(t=>t.status!=="publicado").slice(0,4).map(t=>({u:t.assignees.diseno,task:t.title,st:t.status,id:t.id}));
+  const rows=S.tasks.filter(t=>t.status!=="completado").slice(0,4).map(t=>({u:t.assignees.diseno,task:t.title,st:t.status,id:t.id}));
   let h=`<div class="sec-head"><h2>Equipo trabajando</h2>`+(can("manageUsers")?`<button class="mini-btn" id="addMember">${I.plus}Miembro</button>`:"")+`</div>`;
   rows.forEach(r=>{const s=STATUS[r.st];h+=`<div class="team-row" data-id="${r.id}">${av(r.u)}<div class="tm"><div class="tn">${user(r.u).name}</div><div class="tw">En <b>${esc(r.task)}</b></div></div><span class="st-tag" style="background:color-mix(in srgb,${s.color} 15%,transparent);color:${s.color}">${s.label}</span></div>`;});
   c.innerHTML=h;const am=c.querySelector("#addMember");if(am)am.onclick=()=>{S.ui.view="usuarios";render();setTimeout(openUserForm,50);};
   c.querySelectorAll(".team-row").forEach(r=>r.onclick=()=>openTaskDetail(r.dataset.id));return c;
 }
 function myDeliveriesCard(){
-  const c=el("div","card sec-card");const mine=myTasks().filter(t=>t.status!=="publicado").sort((a,b)=>daysUntil(a.due)-daysUntil(b.due)).slice(0,4);
+  const c=el("div","card sec-card");const mine=myTasks().filter(t=>t.status!=="completado").sort((a,b)=>daysUntil(a.due)-daysUntil(b.due)).slice(0,4);
   let h=`<div class="sec-head"><h2>Mis próximas entregas</h2></div>`;if(!mine.length)h+=`<div style="font-size:13px;color:var(--muted);padding:8px 0">Nada pendiente por entregar. 🎉</div>`;
   mine.forEach(t=>{const du=daysUntil(t.due);const lbl=du<0?"Vencida":du===0?"Hoy":du===1?"Mañana":`En ${du} días`;h+=`<div class="team-row" data-id="${t.id}">${av(t.assignees.diseno)}<div class="tm"><div class="tn">${esc(t.title)}</div><div class="tw">Entrega: <b>${fmtDate(t.due)}</b></div></div><span class="st-tag" style="background:var(--wine-soft);color:var(--wine-2)">${lbl}</span></div>`;});
   c.innerHTML=h;c.querySelectorAll(".team-row").forEach(r=>r.onclick=()=>openTaskDetail(r.dataset.id));return c;
 }
 function progressCard(){
-  const c=el("div","card sec-card");const total=S.tasks.length,pub=S.tasks.filter(t=>t.status==="publicado").length,prog=S.tasks.filter(t=>["proceso","revision","aprobado"].includes(t.status)).length;
+  const c=el("div","card sec-card");const total=S.tasks.length,pub=S.tasks.filter(t=>t.status==="completado").length,prog=S.tasks.filter(t=>["edicion","revision","publicar","programar"].includes(t.status)).length;
   const pct=Math.round(pub/total*100),C=Math.PI*70,pubLen=C*(pub/total),progLen=C*(prog/total);
   c.innerHTML=`<div class="sec-head"><h2>Progreso</h2></div><div class="donut-wrap"><div class="donut"><svg viewBox="0 0 180 100" width="180" height="100"><path d="M20 95 A70 70 0 0 1 160 95" fill="none" stroke="var(--panel-2)" stroke-width="18" stroke-linecap="round"/><path d="M20 95 A70 70 0 0 1 160 95" fill="none" stroke="var(--gold)" stroke-width="18" stroke-linecap="round" stroke-dasharray="${progLen} 999" stroke-dashoffset="${-pubLen}"/><path d="M20 95 A70 70 0 0 1 160 95" fill="none" stroke="var(--wine)" stroke-width="18" stroke-linecap="round" stroke-dasharray="${pubLen} 999"/></svg><div class="pct"><div class="n">${pct}%</div><div class="l">Publicado</div></div></div><div class="legend"><span><span class="d" style="background:var(--wine)"></span>Publicado</span><span><span class="d" style="background:var(--gold)"></span>En proceso</span><span><span class="d hatch"></span>Pendiente</span></div></div>`;return c;
 }
@@ -974,7 +980,7 @@ function reminderCard(){
   const btn=el("button","btn btn-pri",I.video+(m.modality==="virtual"?"Entrar a la reunión":"Ver detalles"));btn.onclick=()=>{S.ui.view="reuniones";render();};c.appendChild(btn);return c;
 }
 function upcomingCard(){
-  const c=el("div","card sec-card");const up=S.tasks.filter(t=>t.status!=="publicado").sort((a,b)=>daysUntil(a.publish)-daysUntil(b.publish)).slice(0,5);
+  const c=el("div","card sec-card");const up=S.tasks.filter(t=>t.status!=="completado").sort((a,b)=>daysUntil(a.publish)-daysUntil(b.publish)).slice(0,5);
   let h=`<div class="sec-head"><h2>Próximas publicaciones</h2>`+(can("createTask")?`<button class="mini-btn" id="pNew">${I.plus}Nueva</button>`:"")+`</div><div class="plist">`;
   up.forEach(t=>{h+=`<div class="prow" data-id="${t.id}"><div class="pic" style="background:${areaRaw(t.area)}">${I.tasks}</div><div class="pm"><div class="pt">${esc(t.title)}</div><div class="pd">Publica: ${fmtDate(t.publish)}</div></div></div>`;});
   h+=`</div>`;c.innerHTML=h;const pn=c.querySelector("#pNew");if(pn)pn.onclick=()=>openTaskForm();c.querySelectorAll(".prow").forEach(r=>r.onclick=()=>openTaskDetail(r.dataset.id));return c;
@@ -1015,12 +1021,12 @@ function viewTareas(){
   return wrap;
 }
 function taskCard(t){
-  const c=el("div","card task");const dueCls=(daysUntil(t.publish)<=1&&t.status!=="publicado")?" due-soon":"";
+  const c=el("div","card task");const dueCls=(daysUntil(t.publish)<=1&&t.status!=="completado")?" due-soon":"";
   const asg=[t.assignees.diseno,t.assignees.copy,t.assignees.publica].filter((v,i,a)=>a.indexOf(v)===i);
   const prog=checkProgress(t);
   c.innerHTML=`<span class="rail" style="background:${AREAS[t.area].color}"></span>
     <div class="top">${statusPill(t.status)}<span class="type-tag">${t.type}</span></div>
-    <h3>${esc(t.title)}</h3><div class="desc">${esc(t.desc)}</div>
+    <h3 style="${doneStyle(t)}">${esc(t.title)}</h3><div class="desc">${esc(t.desc)}</div>
     <div class="meta-row">${prioPill(t.priority)}${(t.networks||[]).slice(0,2).map(netPill).join("")}${prog?`<span class="mini-check">${I.check.replace('stroke-width="2.6"','stroke-width="2.6" width="13" height="13"')}${prog.done}/${prog.total}</span>`:""}</div>
     <div class="foot"><div class="stack">${asg.map(a=>av(a)).join("")}</div><span class="date-badge${dueCls}">${I.cal}${fmtDate(t.publish)}</span></div>`;
   c.onclick=()=>openTaskDetail(t.id);return c;
@@ -1029,7 +1035,7 @@ function taskListView(list){
   const box=el("div","tlist");
   box.appendChild(el("div","tlist-head",`<span>Pieza</span><span>Estado</span><span>Área</span><span>Prioridad</span><span>Publica</span>`));
   list.forEach(t=>{const row=el("div","tlist-row");
-    row.innerHTML=`<div class="tt"><span class="rail-s" style="background:${AREAS[t.area].color}"></span><div class="tx"><div class="nm">${esc(t.title)}</div><div class="sm">${t.type} · ${(t.networks||[]).map(k=>NETWORKS[k].label).join(", ")||"—"}</div></div></div>
+    row.innerHTML=`<div class="tt"><span class="rail-s" style="background:${AREAS[t.area].color}"></span><div class="tx"><div class="nm" style="${doneStyle(t)}">${esc(t.title)}</div><div class="sm">${t.type} · ${(t.networks||[]).map(k=>NETWORKS[k].label).join(", ")||"—"}</div></div></div>
       <div><span class="cell-h">Estado</span>${statusPill(t.status)}</div>
       <div><span class="cell-h">Área</span><span style="font-size:13px;font-weight:600;color:${AREAS[t.area].color}">${AREAS[t.area].label}</span></div>
       <div><span class="cell-h">Prioridad</span>${prioPill(t.priority)}</div>
@@ -1048,7 +1054,7 @@ function kanbanView(list){
     if(!items.length)col.appendChild(el("div","kempty","—"));
     items.forEach(t=>{
       const card=el("div","kcard");card.draggable=true;card.dataset.id=t.id;
-      card.innerHTML=`<span class="krail" style="background:${AREAS[t.area].color}"></span><div class="kt">${esc(t.title)}</div><div class="kmeta">${prioPill(t.priority)}<div class="stack">${av(t.assignees.diseno)}</div></div>`;
+      card.innerHTML=`<span class="krail" style="background:${AREAS[t.area].color}"></span><div class="kt" style="${doneStyle(t)}">${esc(t.title)}</div><div class="kmeta">${prioPill(t.priority)}<div class="stack">${av(t.assignees.diseno)}</div></div>`;
       card.onclick=()=>openTaskDetail(t.id);
       card.addEventListener("dragstart",e=>{card.classList.add("dragging");e.dataTransfer.setData("text/plain",t.id);e.dataTransfer.effectAllowed="move";});
       card.addEventListener("dragend",()=>card.classList.remove("dragging"));
@@ -1064,7 +1070,7 @@ function kanbanView(list){
 
 /* ── Plantillas recurrentes ── */
 const TEMPLATES=[
-  {name:"Versículo de la semana",type:"Post",area:"copy",priority:"baja",networks:["instagram","facebook"],desc:"Versículo semanal + reflexión corta para el post del lunes.",tags:["versículo"],checklist:[{t:"Elegir versículo",d:false},{t:"Escribir reflexión",d:false},{t:"Diseñar arte",d:false}],dueIn:2,pubIn:3},
+  {name:"Versículo de la semana",type:"Post",area:"redes",priority:"baja",networks:["instagram","facebook"],desc:"Versículo semanal + reflexión corta para el post del lunes.",tags:["versículo"],checklist:[{t:"Elegir versículo",d:false},{t:"Escribir reflexión",d:false},{t:"Diseñar arte",d:false}],dueIn:2,pubIn:3},
   {name:"Resumen del domingo",type:"Video",area:"redes",priority:"media",networks:["youtube","instagram"],desc:"Video resumen con los mejores momentos del servicio para publicar entre semana.",tags:["resumen","servicio"],checklist:[{t:"Recopilar tomas",d:false},{t:"Edición",d:false},{t:"Música y subtítulos",d:false}],dueIn:2,pubIn:4},
   {name:"Historia de invitación",type:"Historia",area:"redes",priority:"media",networks:["instagram","whatsapp"],desc:"Historia recordatorio del servicio dominical.",tags:["servicio"],checklist:[{t:"Diseñar historia",d:false},{t:"Publicar el sábado",d:false}],dueIn:4,pubIn:5},
   {name:"Anuncios de la semana",type:"Carrusel",area:"diseno",priority:"alta",networks:["instagram","facebook","whatsapp"],desc:"Carrusel con los anuncios de la semana: célula, ayuno y ofrenda.",tags:["anuncios"],checklist:[{t:"Reunir los anuncios",d:false},{t:"Diseñar slides",d:false},{t:"Revisión de liderazgo",d:false}],dueIn:2,pubIn:3},
@@ -1102,6 +1108,30 @@ function runSearch(q){
 }
 
 /* ═══════════ CALENDARIO ═══════════ */
+function monthlyServersCard(){
+  const moN=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const base=new Date(today.getFullYear(),today.getMonth()+(S.ui.calMode==="mes"?S.ui.monthOffset:0),1);
+  const key=`${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,"0")}`;
+  const cur=S.monthlyServers[key]||{};
+  const canEdit=can("createTask");
+  const card=el("div","card");card.style.cssText="padding:16px 18px;margin-bottom:16px;border-radius:var(--r-lg)";
+  card.innerHTML=`<div style="display:flex;align-items:center;gap:9px;margin-bottom:13px;flex-wrap:wrap"><span style="font-weight:700;font-size:15px">Servidores de ${moN[base.getMonth()]}</span><span style="font-size:11.5px;color:var(--muted)">Quién cubre redes este mes</span></div>`;
+  const grid=el("div");grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px";
+  SERVICE_ROLES.forEach(role=>{
+    const f=el("div");f.style.cssText="display:flex;flex-direction:column;gap:5px";
+    const lbl=el("div");lbl.style.cssText="font-size:12px;font-weight:600;color:var(--muted)";lbl.textContent=role;f.appendChild(lbl);
+    if(canEdit){
+      const sel=el("select","input");sel.innerHTML=`<option value="">— Sin asignar —</option>`+S.users.filter(u=>u.active).map(u=>`<option value="${u.id}"${cur[role]===u.id?" selected":""}>${esc(u.name)}</option>`).join("");
+      sel.onchange=()=>{const roles={...(S.monthlyServers[key]||{})};if(sel.value)roles[role]=sel.value;else delete roles[role];S.monthlyServers[key]=roles;saveMonthlyServers(key,roles);toast("Servidores actualizados");};
+      f.appendChild(sel);
+    }else{
+      const v=el("div");v.style.cssText="font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px";v.innerHTML=cur[role]?`${av(cur[role])}${esc(user(cur[role]).name)}`:`<span style="color:var(--faint);font-weight:500">Sin asignar</span>`;f.appendChild(v);
+    }
+    grid.appendChild(f);
+  });
+  card.appendChild(grid);
+  return card;
+}
 function viewCalendario(){
   const wrap=el("div");const head=el("div","page-head");head.innerHTML=`<div><h1>Calendario</h1><div class="sub">Planificación de contenidos de la semana y el mes</div></div>`;
   const acts=el("div","head-actions");
@@ -1109,13 +1139,14 @@ function viewCalendario(){
   seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.ui.calMode=b.dataset.m;render();});acts.appendChild(seg);
   if(can("createTask")){const a=el("button","btn btn-pri",I.plus+"Nueva tarea");a.onclick=()=>openTaskForm();acts.appendChild(a);}
   head.appendChild(acts);wrap.appendChild(head);
+  wrap.appendChild(monthlyServersCard());
   wrap.appendChild(taskToolbar(false));
   wrap.appendChild(S.ui.calMode==="semana"?calWeek():S.ui.calMode==="mes"?calMonth():calList());
   return wrap;
 }
 function addOn(dateIso){if(!can("createTask")){toast("No tienes permiso para crear tareas");return;}openTaskForm({publish:dateIso,due:dateIso});}
 function addDayButton(dateIso,label){const b=el("button","add-day",I.plus+(label?`<span>${label}</span>`:""));b.onclick=e=>{e.stopPropagation();addOn(dateIso);};return b;}
-function miniTask(t){const s=STATUS[t.status];const c=el("div","mini");const dis=t.assignees.diseno,pub=t.assignees.publica;const stack=`<div class="stack mini-stack" title="Diseña: ${esc(user(dis).name)} · Publica: ${esc(user(pub).name)}">${av(dis)}${pub!==dis?av(pub):""}</div>`;c.innerHTML=`<span class="mrail" style="background:${AREAS[t.area].color}"></span><div class="tt">${esc(t.title)}</div><div class="mm"><span class="st-min" style="background:color-mix(in srgb,${s.color} 15%,transparent);color:${s.color}">${s.label}</span>${stack}</div>`;c.onclick=()=>openTaskDetail(t.id);return c;}
+function miniTask(t){const s=STATUS[t.status];const c=el("div","mini");const dis=t.assignees.diseno,pub=t.assignees.publica;const stack=`<div class="stack mini-stack" title="Diseña: ${esc(user(dis).name)} · Publica: ${esc(user(pub).name)}">${av(dis)}${pub!==dis?av(pub):""}</div>`;c.innerHTML=`<span class="mrail" style="background:${AREAS[t.area].color}"></span><div class="tt" style="${doneStyle(t)}">${esc(t.title)}</div><div class="mm"><span class="st-min" style="background:color-mix(in srgb,${s.color} 15%,transparent);color:${s.color}">${s.label}</span>${stack}</div>`;c.onclick=()=>openTaskDetail(t.id);return c;}
 function calWeek(){
   const wrap=el("div");
   wrap.appendChild(el("div","cal-legend",`<span class="lg">${I.roles.replace('<svg ','<svg width="13" height="13" ')} Diseña</span><span class="lg">${I.arrow.replace('<svg ','<svg width="13" height="13" ')} Publica</span><span>En cada pieza, el <b>1.º</b> avatar diseña y el <b>2.º</b> publica.</span>`));
@@ -1132,7 +1163,7 @@ function calMonth(){
   const wr=el("div","weekday-row");["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].forEach(x=>wr.appendChild(el("span","",x)));wrap.appendChild(wr);
   const grid=el("div","cal-month");const firstDow=(base.getDay()+6)%7,dim=new Date(base.getFullYear(),base.getMonth()+1,0).getDate();const tasks=visibleTasks();
   for(let i=0;i<firstDow;i++)grid.appendChild(el("div","mcell dim"));
-  for(let dn=1;dn<=dim;dn++){const d=new Date(base.getFullYear(),base.getMonth(),dn);const dISO=iso(d);const isT=d.getTime()===today.getTime();const c=el("div","mcell"+(isT?" is-today":""));c.innerHTML=`<div class="mnum">${dn}</div>`;const dt=tasks.filter(t=>t.publish===dISO);dt.slice(0,3).forEach(t=>{const dot=el("div","mdot");dot.innerHTML=`<span class="d" style="background:${AREAS[t.area].color}"></span>${esc(t.title)}`;dot.onclick=e=>{e.stopPropagation();openTaskDetail(t.id);};c.appendChild(dot);});if(dt.length>3)c.appendChild(el("div","mdot","+"+(dt.length-3)+" más"));if(can("createTask")){c.classList.add("clickable");const ap=el("button","add-plus",I.plus);ap.setAttribute("aria-label","Agregar pieza");ap.onclick=e=>{e.stopPropagation();addOn(dISO);};c.appendChild(ap);c.onclick=e=>{if(e.target.closest(".mdot"))return;addOn(dISO);};}grid.appendChild(c);}
+  for(let dn=1;dn<=dim;dn++){const d=new Date(base.getFullYear(),base.getMonth(),dn);const dISO=iso(d);const isT=d.getTime()===today.getTime();const c=el("div","mcell"+(isT?" is-today":""));c.innerHTML=`<div class="mnum">${dn}</div>`;const dt=tasks.filter(t=>t.publish===dISO);dt.slice(0,3).forEach(t=>{const dot=el("div","mdot");dot.innerHTML=`<span class="d" style="background:${AREAS[t.area].color}"></span><span style="${doneStyle(t)}">${esc(t.title)}</span>`;dot.onclick=e=>{e.stopPropagation();openTaskDetail(t.id);};c.appendChild(dot);});if(dt.length>3)c.appendChild(el("div","mdot","+"+(dt.length-3)+" más"));if(can("createTask")){c.classList.add("clickable");const ap=el("button","add-plus",I.plus);ap.setAttribute("aria-label","Agregar pieza");ap.onclick=e=>{e.stopPropagation();addOn(dISO);};c.appendChild(ap);c.onclick=e=>{if(e.target.closest(".mdot"))return;addOn(dISO);};}grid.appendChild(c);}
   wrap.appendChild(grid);return wrap;
 }
 function calList(){
@@ -1140,14 +1171,14 @@ function calList(){
   const groups={};tasks.forEach(t=>{(groups[t.publish]=groups[t.publish]||[]).push(t);});
   const keys=Object.keys(groups).sort();
   if(!keys.length){wrap.appendChild(el("div","empty",I.cal+"<h3>Sin publicaciones</h3><p>No hay piezas con estos filtros.</p>"));if(can("createTask")){const holder=el("div");holder.style.cssText="max-width:280px;margin:0 auto";const a=addDayButton(iso(dayOffset(0)),"Agregar pieza");holder.appendChild(a);wrap.appendChild(holder);}return wrap;}
-  keys.forEach(k=>{const g=el("div","cal-list-group");g.appendChild(el("div","cal-list-date",`${fmtDate(k)}<span class="cnt">${groups[k].length} ${groups[k].length===1?'pieza':'piezas'}</span>`));const box=el("div","tlist");groups[k].forEach(t=>{const row=el("div","tlist-row");row.innerHTML=`<div class="tt"><span class="rail-s" style="background:${AREAS[t.area].color}"></span><div class="tx"><div class="nm">${esc(t.title)}</div><div class="sm">${t.type}</div></div></div><div>${statusPill(t.status)}</div><div><span style="font-size:13px;font-weight:600;color:${AREAS[t.area].color}">${AREAS[t.area].label}</span></div><div>${prioPill(t.priority)}</div><div class="stack" style="justify-content:flex-end">${av(t.assignees.diseno)}</div>`;row.onclick=()=>openTaskDetail(t.id);box.appendChild(row);});g.appendChild(box);if(can("createTask")){const a=addDayButton(k,"Agregar pieza este día");a.style.marginTop="9px";g.appendChild(a);}wrap.appendChild(g);});
+  keys.forEach(k=>{const g=el("div","cal-list-group");g.appendChild(el("div","cal-list-date",`${fmtDate(k)}<span class="cnt">${groups[k].length} ${groups[k].length===1?'pieza':'piezas'}</span>`));const box=el("div","tlist");groups[k].forEach(t=>{const row=el("div","tlist-row");row.innerHTML=`<div class="tt"><span class="rail-s" style="background:${AREAS[t.area].color}"></span><div class="tx"><div class="nm" style="${doneStyle(t)}">${esc(t.title)}</div><div class="sm">${t.type}</div></div></div><div>${statusPill(t.status)}</div><div><span style="font-size:13px;font-weight:600;color:${AREAS[t.area].color}">${AREAS[t.area].label}</span></div><div>${prioPill(t.priority)}</div><div class="stack" style="justify-content:flex-end">${av(t.assignees.diseno)}</div>`;row.onclick=()=>openTaskDetail(t.id);box.appendChild(row);});g.appendChild(box);if(can("createTask")){const a=addDayButton(k,"Agregar pieza este día");a.style.marginTop="9px";g.appendChild(a);}wrap.appendChild(g);});
   if(can("createTask")){const holder=el("div");holder.style.cssText="max-width:280px;margin:4px auto 0";const a=addDayButton(iso(dayOffset(0)),"Agregar en otra fecha");holder.appendChild(a);wrap.appendChild(holder);}
   return wrap;
 }
 
 /* ═══════════ IDEAS ═══════════ */
 function viewIdeas(){
-  const wrap=el("div");const head=el("div","page-head");head.innerHTML=`<div><h1>Banco de ideas</h1><div class="sub">Trends, conceptos y referencias para próximos contenidos</div></div>`;
+  const wrap=el("div");const head=el("div","page-head");head.innerHTML=`<div><h1>Banco de ideas</h1><div class="sub">Moodboards y conceptos para conferencias, temas del mes y eventos grandes</div></div>`;
   const a=el("button","btn btn-gold",I.plus+"Nueva idea");a.onclick=()=>openIdeaForm();head.appendChild(a);wrap.appendChild(head);
   const bar=el("div","toolbar");const filters=el("div","filters");
   const all=el("button","chip"+(S.ui.ideaFilter===null?" on":""),"Todas");all.onclick=()=>{S.ui.ideaFilter=null;render();};filters.appendChild(all);
@@ -1271,7 +1302,7 @@ function viewUsuarios(){
   wrap.appendChild(cnt);
   // carga de trabajo
   const members=S.users.filter(u=>u.active&&u.role!=="pastor");
-  const loads=members.map(u=>({u,n:S.tasks.filter(t=>t.status!=="publicado"&&Object.values(t.assignees).includes(u.id)).length}));
+  const loads=members.map(u=>({u,n:S.tasks.filter(t=>t.status!=="completado"&&Object.values(t.assignees).includes(u.id)).length}));
   const maxL=Math.max(1,...loads.map(x=>x.n));
   const wlCard=el("div","card sec-card");wlCard.style.marginBottom="20px";
   let wh=`<div class="sec-head"><h2>Carga del equipo</h2><span class="mini-btn">Tareas activas</span></div><div class="workload">`;
@@ -1283,7 +1314,7 @@ function viewUsuarios(){
   S.users.forEach(u=>{
     const row=el("div","urow"+(u.active?"":" u-off"));
     const rc=ROLES[u.role];
-    const activeCount=S.tasks.filter(t=>t.status!=="publicado"&&Object.values(t.assignees).includes(u.id)).length;
+    const activeCount=S.tasks.filter(t=>t.status!=="completado"&&Object.values(t.assignees).includes(u.id)).length;
     const access=u.role==="pastor"?"Lectura total":u.role==="liderazgo"?"Gestión total":(u.planner?"Equipo + Planificador":"Equipo operativo");
     row.innerHTML=`<div class="uperson">${av(u.id)}<div style="min-width:0"><div class="un">${esc(u.name)}${u.planner?`<span class="u-plan">Planificador</span>`:""}</div><div class="ue">${esc(u.sub)}${u.role!=="pastor"?` · ${activeCount} activas`:""}</div></div></div>
       <div class="ucol-role"><span class="role-badge" style="background:color-mix(in srgb,${rc.color} 15%,transparent);color:${rc.color}"><span style="width:7px;height:7px;border-radius:50%;background:${rc.color}"></span>${rc.label}</span></div>
@@ -1364,7 +1395,9 @@ function openDrawer(title,subtitle,bodyNode,footNode,wide){
 function closeDrawer(instant){const root=$("#drawerRoot");if(!root.children.length)return;const scrim=root.querySelector(".drawer-scrim"),dr=root.querySelector(".drawer");document.body.style.overflow="";drawerOpen=false;if(instant){root.innerHTML="";return;}if(scrim)scrim.classList.remove("show");if(dr)dr.classList.remove("show");setTimeout(()=>{root.innerHTML="";},320);}
 
 function openTaskDetail(id){
-  const t=S.tasks.find(x=>x.id===id);if(!t)return;const body=el("div");
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  if(can("createTask"))return openTaskForm(t,t.id);
+  const body=el("div");
   body.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${statusPill(t.status)}${prioPill(t.priority)}<span class="pill" style="background:color-mix(in srgb,${AREAS[t.area].color} 15%,transparent);color:${AREAS[t.area].color}"><span class="d" style="background:${AREAS[t.area].color}"></span>${AREAS[t.area].label}</span><span class="pill" style="background:var(--panel-2);color:var(--muted)">${t.type}</span></div><p style="font-size:14px;line-height:1.6;margin:0 0 6px">${esc(t.desc)}</p>`;
   if((t.networks||[]).length){const nn=el("div");nn.style.cssText="display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 2px";nn.innerHTML=t.networks.map(netPill).join("");body.appendChild(nn);}
   if(t.caption){const cap=el("div");cap.style.cssText="margin-top:14px";cap.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px">CAPTION / COPY</div><div style="font-size:13.5px;line-height:1.55;background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:12px 14px">${esc(t.caption)}</div>`;body.appendChild(cap);}
@@ -1390,8 +1423,8 @@ function openTaskDetail(id){
   let foot=null;
   if(can("approve")||can("createTask")){foot=el("div");foot.style.cssText="display:flex;gap:10px;width:100%";
     if(can("createTask")){const edit=el("button","btn btn-ghost",I.edit+"Editar");edit.onclick=()=>openTaskForm(t,t.id);foot.appendChild(edit);}
-    if(can("approve")&&t.status==="revision"){const appr=el("button","btn btn-pri",I.check+"Aprobar");appr.onclick=()=>{t.status="aprobado";logActivity(t,"aprobó la pieza");saveTask(t);closeDrawer();render();toast("Pieza aprobada ✓");};foot.appendChild(appr);}
-    else if(can("approve")&&t.status!=="publicado"){const req=el("button","btn btn-ghost",I.chat+"Pedir cambios");req.onclick=()=>{t.status="proceso";logActivity(t,"pidió cambios");saveTask(t);closeDrawer();openTaskDetail(id);toast("Enviada a cambios");};foot.appendChild(req);}
+    if(can("approve")&&t.status==="revision"){const appr=el("button","btn btn-pri",I.check+"Aprobar");appr.onclick=()=>{t.status="publicar";logActivity(t,"aprobó la pieza");saveTask(t);closeDrawer();render();toast("Pieza aprobada ✓");};foot.appendChild(appr);}
+    else if(can("approve")&&t.status!=="completado"){const req=el("button","btn btn-ghost",I.chat+"Pedir cambios");req.onclick=()=>{t.status="edicion";logActivity(t,"pidió cambios");saveTask(t);closeDrawer();openTaskDetail(id);toast("Enviada a cambios");};foot.appendChild(req);}
   }
   openDrawer(t.title,t.type+" · "+AREAS[t.area].label,body,foot);
 }
@@ -1445,18 +1478,27 @@ function openTaskForm(prefill={},editId){
   // links
   const linkHost=body.querySelector("#f-links");const renderLinks=()=>{linkHost.innerHTML="";links.forEach((lk,idx)=>{const r=el("div","dyn-item");const inp=el("input","input");inp.value=lk.name;inp.placeholder="Nombre del link (ej: Material en Drive)";inp.oninput=()=>links[idx].name=inp.value;const del=el("button","dyn-del",I.trash);del.onclick=()=>{links.splice(idx,1);renderLinks();};r.appendChild(inp);r.appendChild(del);linkHost.appendChild(r);});};
   body.querySelector("#f-links-add").onclick=()=>{links.push({name:"",url:"#"});renderLinks();};renderLinks();
+  // ── Al editar: estado arriba + comentarios y compartir abajo ──
+  if(editing){const te=S.tasks.find(x=>x.id===editId);
+    const stSect=el("div","field");stSect.innerHTML=`<label>Estado</label>`;const stPick=el("div","pickset");
+    Object.entries(STATUS).forEach(([k,st])=>{const b=el("button","pick"+(te.status===k?" on":""),st.label);b.type="button";b.onclick=()=>{te.status=k;stPick.querySelectorAll(".pick").forEach(x=>x.classList.remove("on"));b.classList.add("on");logActivity(te,`cambió el estado a <b>${st.label}</b>`);saveTask(te);toast("Estado: "+st.label);};stPick.appendChild(b);});
+    stSect.appendChild(stPick);body.insertBefore(stSect,body.firstChild);
+    const sh=el("div","d-sect");sh.style.marginTop="18px";sh.innerHTML=`<div class="dt">Compartir</div>`;const lb=el("div","link-row");lb.innerHTML=`${I.link}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${taskLink(te)}</span>`;sh.appendChild(lb);const sr=el("div");sr.style.cssText="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap";const cpb=el("button","btn btn-ghost btn-sm",I.link+"Copiar enlace");cpb.type="button";cpb.onclick=()=>copyText(taskLink(te),"Enlace copiado");const wab=el("a","btn btn-sm");wab.style.cssText="background:#25d366;color:#07321a;text-decoration:none";wab.href="https://wa.me/?text="+encodeURIComponent(taskShareText(te));wab.target="_blank";wab.rel="noopener";wab.innerHTML=`${I.wa.replace('<svg ','<svg width="16" height="16" ')}Recordar por WhatsApp`;sr.appendChild(cpb);sr.appendChild(wab);sh.appendChild(sr);body.appendChild(sh);
+    const cs=el("div","d-sect");cs.innerHTML=`<div class="dt">Comentarios del equipo (${(te.comments||[]).length})</div>`;(te.comments||[]).forEach(cm=>cs.appendChild(el("div","d-comment",`${av(cm.by)}<div class="dc"><div class="dn">${user(cm.by).name} <span style="font-weight:400;color:var(--faint);font-size:11px">${cm.time}</span></div><div class="db">${esc(cm.body)}</div></div>`)));
+    const addc=el("div","inline-add");const cinp=el("input","input");cinp.placeholder="Escribe un comentario…";const csend=el("button","btn btn-pri btn-sm",I.arrow);csend.type="button";csend.onclick=()=>{if(!cinp.value.trim())return;te.comments=te.comments||[];te.comments.push({by:me().id,time:"Ahora",body:cinp.value.trim()});logActivity(te,"comentó la pieza");saveTask(te);closeDrawer();openTaskForm(S.tasks.find(x=>x.id===editId),editId);};addc.appendChild(cinp);addc.appendChild(csend);cs.appendChild(addc);body.appendChild(cs);
+  }
   // footer
   const foot=el("div");foot.style.cssText="display:flex;gap:10px;width:100%";const cancel=el("button","btn btn-ghost","Cancelar");cancel.onclick=()=>closeDrawer();const sv=el("button","btn btn-pri",I.check+(editing?"Guardar":"Crear tarea"));
   sv.onclick=()=>{const title=body.querySelector("#f-title").value.trim();if(!title){toast("Ponle un título a la tarea");return;}
     const data={title,type,area,priority,networks:[...nets],desc:body.querySelector("#f-desc").value.trim()||"Sin descripción.",caption:body.querySelector("#f-cap").value.trim(),assignees:{diseno:body.querySelector("#f-dis").value,copy:body.querySelector("#f-cop").value,publica:body.querySelector("#f-pub2").value},due:body.querySelector("#f-due").value,publish:body.querySelector("#f-pub").value,tags:tags.slice(),checklist:checklist.filter(x=>x.t.trim()),links:links.filter(x=>x.name.trim())};
     if(editing){const t=S.tasks.find(x=>x.id===editId);Object.assign(t,data);logActivity(t,"editó la pieza");saveTask(t);toast("Tarea actualizada");closeDrawer();render();}
-    else{S.tasks.unshift({id:uid(),status:"pendiente",comments:[],activity:[{who:me().id,time:"Ahora",text:"creó la pieza"}],...data});saveTask(S.tasks[0]);notifyTaskAssigned(S.tasks[0]);toast("Tarea creada");closeDrawer();if(S.ui.view!=="tareas"&&S.ui.view!=="calendario"&&S.ui.view!=="dashboard"){S.ui.view="tareas";}render();}};
+    else{S.tasks.unshift({id:uid(),status:"porhacer",comments:[],activity:[{who:me().id,time:"Ahora",text:"creó la pieza"}],...data});saveTask(S.tasks[0]);notifyTaskAssigned(S.tasks[0]);toast("Tarea creada");closeDrawer();if(S.ui.view!=="tareas"&&S.ui.view!=="calendario"&&S.ui.view!=="dashboard"){S.ui.view="tareas";}render();}};
   foot.appendChild(cancel);foot.appendChild(sv);
   openDrawer(editing?"Editar tarea":"Nueva tarea",editing?prefill.title:"Crea una pieza de contenido",body,foot,true);
 }
 
 function openIdeaForm(){
-  let type="Trend";const body=el("div");
+  let type="Concepto";const body=el("div");
   body.innerHTML=`<div class="field"><label>Tipo</label><div class="pickset" id="i-type"></div></div><div class="field"><label>Título de la idea</label><input class="input" id="i-title" placeholder="Ej: Reel al ritmo de la canción"></div><div class="field"><label>Descripción</label><textarea class="area" id="i-desc" placeholder="Explica el concepto, la referencia o el trend…"></textarea></div>`;
   const tp=body.querySelector("#i-type");IDEA_TYPES.forEach(t=>{const b=el("button","pick"+(t===type?" on":""),t);b.onclick=()=>{type=t;tp.querySelectorAll(".pick").forEach(x=>x.classList.remove("on"));b.classList.add("on");};tp.appendChild(b);});
   const foot=el("div");foot.style.cssText="display:flex;gap:10px;width:100%";const cancel=el("button","btn btn-ghost","Cancelar");cancel.onclick=()=>closeDrawer();const btn=el("button","btn btn-gold",I.check+"Guardar idea");btn.onclick=()=>{const title=body.querySelector("#i-title").value.trim();if(!title){toast("Ponle un título a la idea");return;}S.ideas.unshift({id:uid(),type,title,desc:body.querySelector("#i-desc").value.trim()||"Sin descripción.",by:me().id,likes:[],status:"nueva",comments:[]});saveIdea(S.ideas[0]);closeDrawer();S.ui.view="ideas";render();toast("Idea agregada al banco");};foot.appendChild(cancel);foot.appendChild(btn);
