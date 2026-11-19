@@ -215,6 +215,26 @@ svg{display:block}
 .chip.on{color:var(--fg);border-color:var(--line-2);background:var(--panel)}
 .chip .swatch{width:10px;height:10px;border-radius:50%}
 .chip-mine.on{background:var(--gold);color:#2a1f00;border-color:transparent}
+/* filtros desplegables (pro) */
+.filter-rail{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fdrop{position:relative}
+.fdrop>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:9px;padding:8px 13px;border-radius:12px;font-size:13px;font-weight:600;background:var(--panel);border:1px solid var(--line);color:var(--fg);transition:.15s;user-select:none;white-space:nowrap}
+.fdrop>summary::-webkit-details-marker{display:none}
+.fdrop>summary:hover{border-color:var(--line-2)}
+.fdrop[open]>summary{border-color:var(--line-2);background:var(--panel-2)}
+.fdrop>summary .flbl{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--faint);text-transform:uppercase}
+.fdrop.active>summary{background:var(--wine-soft);border-color:color-mix(in srgb,var(--wine-2) 38%,var(--line));color:var(--wine-2)}
+.fdrop.active>summary .flbl{color:color-mix(in srgb,var(--wine-2) 70%,transparent)}
+.fdrop .fcaret{display:inline-flex;opacity:.45;transition:.18s}
+.fdrop[open] .fcaret{transform:rotate(180deg)}
+.fdrop .swatch{width:10px;height:10px;border-radius:50%;flex:none}
+.fdrop .fmenu{position:absolute;top:calc(100% + 6px);left:0;z-index:40;min-width:210px;background:var(--panel);border:1px solid var(--line-2);border-radius:14px;box-shadow:0 14px 38px rgba(0,0,0,.20);padding:6px;display:flex;flex-direction:column;gap:1px;animation:fdrop-in .14s ease}
+@keyframes fdrop-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.fdrop .fopt{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;font-size:13px;font-weight:600;color:var(--fg);cursor:pointer;white-space:nowrap;transition:.12s}
+.fdrop .fopt:hover{background:var(--panel-2)}
+.fdrop .fopt.sel{background:var(--wine-soft);color:var(--wine-2)}
+.fdrop .fopt .fcheck{margin-left:auto;display:inline-flex;opacity:0;color:var(--wine-2)}
+.fdrop .fopt.sel .fcheck{opacity:1}
 
 .grid{display:grid;gap:16px}
 .cols-auto{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
@@ -1042,13 +1062,25 @@ let cdTimer=null;
 function tickCountdown(){if(cdTimer)clearInterval(cdTimer);const upd=()=>{const node=document.getElementById("cd");if(!node){clearInterval(cdTimer);return;}let diff=Math.max(0,nextSunday()-new Date());const dd=Math.floor(diff/864e5);diff-=dd*864e5;const hh=Math.floor(diff/36e5);diff-=hh*36e5;const mm=Math.floor(diff/6e4);diff-=mm*6e4;const ss=Math.floor(diff/1e3);node.textContent=`${dd}d ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;};upd();cdTimer=setInterval(upd,1000);}
 
 /* ═══════════ TAREAS ═══════════ */
+function filterDrop(label,allLabel,options,cur,pick){
+  const d=el("details","fdrop"+(cur?" active":""));
+  const sel=cur?options.find(o=>o.key===cur):null;
+  const sum=el("summary");
+  sum.innerHTML=`<span class="flbl">${esc(label)}</span>`+(sel&&sel.color?`<span class="swatch" style="background:${sel.color}"></span>`:"")+`<span>${sel?esc(sel.label):esc(allLabel)}</span>`+`<span class="fcaret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
+  d.appendChild(sum);
+  const menu=el("div","fmenu");
+  const mk=(key,lbl,color)=>{const o=el("div","fopt"+((cur||null)===key?" sel":""));o.innerHTML=(color?`<span class="swatch" style="background:${color}"></span>`:"")+`<span>${esc(lbl)}</span>`+`<span class="fcheck">${I.check.replace('<svg ','<svg width="15" height="15" ')}</span>`;o.onclick=()=>{d.open=false;pick(key);};menu.appendChild(o);};
+  mk(null,allLabel,null);
+  options.forEach(o=>mk(o.key,o.label,o.color));
+  d.appendChild(menu);
+  return d;
+}
 function taskToolbar(showView){
+  if(!window._fdropInit){window._fdropInit=1;document.addEventListener("click",e=>{document.querySelectorAll("details.fdrop[open]").forEach(d=>{if(!d.contains(e.target))d.open=false;});});}
   const bar=el("div","toolbar");
-  const filters=el("div","filters");
-  const all=el("button","chip"+(S.ui.filterArea===null?" on":""),"Todas las áreas");all.onclick=()=>{S.ui.filterArea=null;render();};filters.appendChild(all);
-  Object.entries(AREAS).forEach(([k,a])=>{const c=el("button","chip"+(S.ui.filterArea===k?" on":""),`<span class="swatch" style="background:${a.color}"></span>${a.label}`);c.onclick=()=>{S.ui.filterArea=S.ui.filterArea===k?null:k;render();};filters.appendChild(c);});
-  // estado
-  Object.entries(STATUS).forEach(([k,s])=>{const c=el("button","chip"+(S.ui.filterStatus===k?" on":""),`<span class="swatch" style="background:${s.color}"></span>${s.label}`);c.onclick=()=>{S.ui.filterStatus=S.ui.filterStatus===k?null:k;render();};filters.appendChild(c);});
+  const filters=el("div","filter-rail");
+  filters.appendChild(filterDrop("Área","Todas",Object.entries(AREAS).map(([k,a])=>({key:k,label:a.label,color:a.color})),S.ui.filterArea,k=>{S.ui.filterArea=k;render();}));
+  filters.appendChild(filterDrop("Estado","Todos",Object.entries(STATUS).map(([k,s])=>({key:k,label:s.label,color:s.color})),S.ui.filterStatus,k=>{S.ui.filterStatus=k;render();}));
   const mine=el("button","chip chip-mine"+(S.ui.mine?" on":""),I.check.replace('stroke-width="2.6"','stroke-width="2.6" width="13" height="13"')+"Mis tareas");mine.onclick=()=>{S.ui.mine=!S.ui.mine;render();};filters.appendChild(mine);
   bar.appendChild(filters);
   if(showView){const seg=el("div","seg");seg.innerHTML=`<button class="${S.ui.taskView==='tarjetas'?'on':''}" data-v="tarjetas">${I.cards}</button><button class="${S.ui.taskView==='lista'?'on':''}" data-v="lista">${I.list}</button><button class="${S.ui.taskView==='tablero'?'on':''}" data-v="tablero">${I.board}</button>`;seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.ui.taskView=b.dataset.v;render();});bar.appendChild(seg);}
