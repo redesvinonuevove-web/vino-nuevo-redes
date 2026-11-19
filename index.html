@@ -544,6 +544,9 @@ svg{display:block}
 .menu .mi .meta .n{font-size:13.5px;font-weight:600;line-height:1.15}
 .menu .mi .meta .r{font-size:11px;color:var(--muted)}
 .menu .mi .ck{width:17px;height:17px;color:var(--wine);flex:none}
+.menu .mi>svg{width:18px;height:18px;flex:none;color:var(--muted)}
+.lforgot{margin-top:12px}
+.lforgot button{font-size:12.5px;color:var(--muted);text-decoration:underline}
 .menu-sep{height:1px;background:var(--line);margin:6px 4px}
 .menu-lbl{font-size:10.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;padding:9px 11px 5px}
 .notif{display:flex;gap:11px;padding:12px 11px;border-radius:13px;transition:.12s}
@@ -644,6 +647,7 @@ svg{display:block}
     <div class="field"><label>Contraseña</label><input class="input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn btn-pri" id="l-go">Entrar</button>
     <div class="login-msg" id="l-msg"></div>
+    <div class="lforgot" id="l-forgot-wrap"><button type="button" id="l-forgot">¿Olvidaste tu contraseña?</button></div>
     <div class="lswitch" id="l-switch"></div>
   </div>
 </div>
@@ -1526,14 +1530,46 @@ async function doLogin(){
   }catch(e){msg.textContent=(e&&e.message)||"No se pudo iniciar sesión.";msg.className="login-msg err";}
   $("#l-go").disabled=false;
 }
+async function doForgot(){
+  const email=$("#l-email").value.trim(),msg=$("#l-msg");msg.className="login-msg";
+  if(!email){msg.textContent="Escribe tu correo arriba y vuelve a tocar aquí.";msg.className="login-msg err";return;}
+  try{const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href.split("#")[0]});if(error)throw error;msg.textContent="Te enviamos un correo para recuperar tu contraseña.";msg.className="login-msg ok";}
+  catch(e){msg.textContent=(e&&e.message)||"No se pudo enviar.";msg.className="login-msg err";}
+}
+let _recovery=false;
+function showRecovery(){
+  _recovery=true;$("#loginScreen").hidden=false;
+  $("#lsub").textContent="Escribe tu nueva contraseña";
+  const ef=document.querySelector("#l-email").closest(".field");if(ef)ef.style.display="none";
+  const pf=document.querySelector("#l-pass").closest(".field");if(pf)pf.querySelector("label").textContent="Nueva contraseña";
+  $("#l-pass").value="";$("#l-go").textContent="Guardar contraseña";
+  $("#l-switch").innerHTML="";$("#l-forgot-wrap").hidden=true;
+  const msg=$("#l-msg");msg.textContent="";msg.className="login-msg";
+}
+async function doLoginOrSave(){
+  if(_recovery){
+    const p=$("#l-pass").value,msg=$("#l-msg");msg.className="login-msg";
+    if(p.length<6){msg.textContent="La contraseña debe tener al menos 6 caracteres.";msg.className="login-msg err";return;}
+    $("#l-go").disabled=true;
+    try{const{error}=await sb.auth.updateUser({password:p});if(error)throw error;_recovery=false;msg.textContent="¡Listo! Entrando…";msg.className="login-msg ok";setTimeout(()=>location.replace(location.pathname),800);}
+    catch(e){msg.textContent=(e&&e.message)||"No se pudo.";msg.className="login-msg err";$("#l-go").disabled=false;}
+    return;
+  }
+  return doLogin();
+}
 async function boot(){
-  $("#l-go").onclick=doLogin;
-  $("#l-pass").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+  $("#l-go").onclick=doLoginOrSave;
+  $("#l-forgot").onclick=doForgot;
+  $("#l-pass").addEventListener("keydown",e=>{if(e.key==="Enter")doLoginOrSave();});
   setLoginMode("in");
+  const isRecovery=location.hash.includes("type=recovery");
   let session=null;
   try{session=(await sb.auth.getSession()).data.session;}catch(e){console.error(e);}
-  if(session&&session.user){await loadAll(session.user);$("#loginScreen").hidden=true;render();}
+  if(isRecovery)showRecovery();
+  else if(session&&session.user){await loadAll(session.user);$("#loginScreen").hidden=true;render();}
   sb.auth.onAuthStateChange(async(_e,s)=>{
+    if(_e==="PASSWORD_RECOVERY"){showRecovery();return;}
+    if(_recovery)return;
     if(s&&s.user){if(S.currentUserId!==s.user.id){await loadAll(s.user);}$("#loginScreen").hidden=true;render();}
     else{S.currentUserId=null;$("#loginScreen").hidden=false;}
   });
