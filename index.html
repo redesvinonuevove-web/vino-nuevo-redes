@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}#nl-badge-frame,iframe[id^="nl-badge"],iframe[src*=".netlify/"]{display:none!important}</style>
 <title>Vino Nuevo · Redes</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -1580,5 +1580,6 @@ async function boot(){
 }
 boot();
 </script>
+<script>(function(){function k(){document.querySelectorAll('#nl-badge-frame,iframe[id^="nl-badge"]').forEach(function(e){try{e.remove();}catch(_){}});}k();try{new MutationObserver(k).observe(document.documentElement,{childList:true,subtree:true});}catch(_){}document.addEventListener('DOMContentLoaded',k);setTimeout(k,1500);setTimeout(k,4000);})();</script>
 </body>
 </html>
