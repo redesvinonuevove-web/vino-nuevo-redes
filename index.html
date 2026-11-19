@@ -1185,7 +1185,6 @@ function viewCalendario(){
   seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.ui.calMode=b.dataset.m;render();});acts.appendChild(seg);
   if(can("createTask")){const sbv=el("button","btn btn-ghost",I.serve+"Servidores");sbv.onclick=()=>openServiceForm();acts.appendChild(sbv);const a=el("button","btn btn-pri",I.plus+"Nueva tarea");a.onclick=()=>openTaskForm();acts.appendChild(a);}
   head.appendChild(acts);wrap.appendChild(head);
-  wrap.appendChild(monthlyServersCard());
   wrap.appendChild(taskToolbar(false));
   wrap.appendChild(S.ui.calMode==="semana"?calWeek():S.ui.calMode==="mes"?calMonth():calList());
   return wrap;
