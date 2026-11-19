@@ -728,6 +728,10 @@ const SEED={
 const SB_URL="https://gqudfdjrozootpqlripk.supabase.co";
 const SB_KEY="sb_publishable_THja4j7BmzcC7RPmMBxEPw_A7zuDpcL";
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const APP_URL="https://vinonuevo.netlify.app";
+async function notify(payload){try{const r=await sb.functions.invoke('send-notice',{body:payload});if(r&&r.error)console.warn('notify error',r.error);}catch(e){console.warn('notify failed',e);}}
+function notifyTaskAssigned(t){if(!t||!t.assignees)return;const ids=[...new Set([t.assignees.diseno,t.assignees.copy,t.assignees.publica])].filter(Boolean).filter(id=>id!==me().id);const emails=ids.map(id=>{const u=user(id);return u&&u.email;}).filter(Boolean);if(!emails.length)return;notify({to:emails,subject:`Nueva tarea: ${t.title}`,heading:'Te asignaron una tarea',intro:`${me().name} te asignó una pieza del equipo de redes. Aquí están los detalles:`,rows:[['Tarea',t.title],['Tipo',t.type||'—'],['Entrega',t.due?fmtDate(t.due):'Por definir'],['Publica',t.publish?fmtDate(t.publish):'Por definir']],ctaText:'Ver en la app',ctaUrl:APP_URL,footnote:'Entra a la app para ver todos los detalles y marcar tu avance.'});}
+function notifyMeeting(m,invites,modality){const emails=(invites||[]).map(i=>i.email).filter(Boolean).filter(e=>!me().email||e.toLowerCase()!==me().email.toLowerCase());if(!emails.length)return;notify({to:emails,subject:`Reunión: ${m.title}`,heading:'Te invitamos a una reunión',intro:`${me().name} convocó una reunión del equipo de redes. Confirma tu asistencia desde la app.`,rows:[['Reunión',m.title],['Fecha',m.date?fmtDate(m.date):'Por definir'],['Hora',m.time||'—'],['Modalidad',modality||m.modality||'—'],['Agenda',m.agenda||'Por definir']],ctaText:'Abrir la app',ctaUrl:APP_URL});}
 function uid(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(16).slice(2);}
 let S={users:[],tasks:[],ideas:[],meetings:[],services:[],pastoralComments:[],publicComments:[],notifications:[],currentUserId:null,
   ui:{view:"dashboard",calMode:"semana",filterArea:null,filterStatus:null,mine:false,monthOffset:0,taskView:"tarjetas",ideaFilter:null,ideaView:"tarjetas"}};
@@ -808,7 +812,7 @@ function fmtDate(s){const d=new Date(s+"T00:00:00");return `${DN[d.getDay()]} ${
 function daysUntil(s){return Math.round((new Date(s+"T00:00:00")-today)/864e5);}
 function toast(m){const t=$("#toast");t.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>${m}`;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
 function firstName(n){return n.split(/\s+/).slice(-1)[0];}
-function taskLink(t){return `https://redes.vinonuevo.app/t/${t.id}`;}
+function taskLink(t){return `${APP_URL}/t/${t.id}`;}
 function taskShareText(t){
   const L=[`📋 ${t.title}`,`${t.type} · ${AREAS[t.area].label} · ${STATUS[t.status].label}`,`🎨 Diseña: ${user(t.assignees.diseno).name}   ✍️ Redacta: ${user(t.assignees.copy).name}   📲 Publica: ${user(t.assignees.publica).name}`,`📅 Entrega: ${fmtDate(t.due)} · Publica: ${fmtDate(t.publish)}`];
   if((t.networks||[]).length)L.push(`Redes: ${t.networks.map(n=>NETWORKS[n].label).join(", ")}`);
@@ -1446,7 +1450,7 @@ function openTaskForm(prefill={},editId){
   sv.onclick=()=>{const title=body.querySelector("#f-title").value.trim();if(!title){toast("Ponle un título a la tarea");return;}
     const data={title,type,area,priority,networks:[...nets],desc:body.querySelector("#f-desc").value.trim()||"Sin descripción.",caption:body.querySelector("#f-cap").value.trim(),assignees:{diseno:body.querySelector("#f-dis").value,copy:body.querySelector("#f-cop").value,publica:body.querySelector("#f-pub2").value},due:body.querySelector("#f-due").value,publish:body.querySelector("#f-pub").value,tags:tags.slice(),checklist:checklist.filter(x=>x.t.trim()),links:links.filter(x=>x.name.trim())};
     if(editing){const t=S.tasks.find(x=>x.id===editId);Object.assign(t,data);logActivity(t,"editó la pieza");saveTask(t);toast("Tarea actualizada");closeDrawer();render();}
-    else{S.tasks.unshift({id:uid(),status:"pendiente",comments:[],activity:[{who:me().id,time:"Ahora",text:"creó la pieza"}],...data});saveTask(S.tasks[0]);toast("Tarea creada");closeDrawer();if(S.ui.view!=="tareas"&&S.ui.view!=="calendario"&&S.ui.view!=="dashboard"){S.ui.view="tareas";}render();}};
+    else{S.tasks.unshift({id:uid(),status:"pendiente",comments:[],activity:[{who:me().id,time:"Ahora",text:"creó la pieza"}],...data});saveTask(S.tasks[0]);notifyTaskAssigned(S.tasks[0]);toast("Tarea creada");closeDrawer();if(S.ui.view!=="tareas"&&S.ui.view!=="calendario"&&S.ui.view!=="dashboard"){S.ui.view="tareas";}render();}};
   foot.appendChild(cancel);foot.appendChild(sv);
   openDrawer(editing?"Editar tarea":"Nueva tarea",editing?prefill.title:"Crea una pieza de contenido",body,foot,true);
 }
@@ -1458,7 +1462,7 @@ function openIdeaForm(){
   const foot=el("div");foot.style.cssText="display:flex;gap:10px;width:100%";const cancel=el("button","btn btn-ghost","Cancelar");cancel.onclick=()=>closeDrawer();const btn=el("button","btn btn-gold",I.check+"Guardar idea");btn.onclick=()=>{const title=body.querySelector("#i-title").value.trim();if(!title){toast("Ponle un título a la idea");return;}S.ideas.unshift({id:uid(),type,title,desc:body.querySelector("#i-desc").value.trim()||"Sin descripción.",by:me().id,likes:[],status:"nueva",comments:[]});saveIdea(S.ideas[0]);closeDrawer();S.ui.view="ideas";render();toast("Idea agregada al banco");};foot.appendChild(cancel);foot.appendChild(btn);
   openDrawer("Nueva idea","Súmala al banco de ideas",body,foot);
 }
-function meetingLink(m){return `https://redes.vinonuevo.app/r/${m.id}`;}
+function meetingLink(m){return `${APP_URL}/r/${m.id}`;}
 function emailOf(u){return u.email||(firstName(u.name).toLowerCase()+"@vinonuevo.org");}
 function meetingInvitees(m){if(m.invites&&m.invites.length)return m.invites;return Object.keys(m.rsvp||{}).map(uid=>({name:user(uid).name,email:emailOf(user(uid)),uid}));}
 function openMeetingEmail(m){
@@ -1479,7 +1483,7 @@ function openMeetingForm(){
   body.querySelector("#r-email-add").onclick=()=>{const inp=body.querySelector("#r-email");const em=inp.value.trim();if(!/.+@.+\..+/.test(em)){toast("Escribe un correo válido");return;}if(!invites.some(i=>i.email.toLowerCase()===em.toLowerCase()))invites.push({name:em.split("@")[0],email:em,uid:null});inp.value="";renderInv();};
   renderInv();
   const foot=el("div");foot.style.cssText="display:flex;gap:10px;width:100%";const cancel=el("button","btn btn-ghost","Cancelar");cancel.onclick=()=>closeDrawer();const btn=el("button","btn btn-pri",`${I.mail.replace('<svg ','<svg width="17" height="17" ')}Convocar e invitar`);
-  btn.onclick=()=>{const title=body.querySelector("#r-title").value.trim();if(!title){toast("Ponle título a la reunión");return;}const rsvp={};invites.forEach(i=>{if(i.uid)rsvp[i.uid]=null;});const m={id:uid(),title,date:body.querySelector("#r-date").value,time:body.querySelector("#r-time").value||"—",modality,agenda:body.querySelector("#r-agenda").value.trim()||"Por definir.",rsvp,notes:{},invites};S.meetings.unshift(m);const _n={id:uid(),type:"meeting",who:me().id,text:`Nueva convocatoria: <b>${esc(title)}</b>`,time:"Ahora",unread:true,color:"#d4af37"};S.notifications.unshift(_n);saveMeeting(m);addNotif(_n);closeDrawer();S.ui.view="reuniones";render();toast(invites.length?`📧 Invitación enviada por correo a ${invites.length} ${invites.length===1?'persona':'personas'}`:"Reunión convocada");};
+  btn.onclick=()=>{const title=body.querySelector("#r-title").value.trim();if(!title){toast("Ponle título a la reunión");return;}const rsvp={};invites.forEach(i=>{if(i.uid)rsvp[i.uid]=null;});const m={id:uid(),title,date:body.querySelector("#r-date").value,time:body.querySelector("#r-time").value||"—",modality,agenda:body.querySelector("#r-agenda").value.trim()||"Por definir.",rsvp,notes:{},invites};S.meetings.unshift(m);const _n={id:uid(),type:"meeting",who:me().id,text:`Nueva convocatoria: <b>${esc(title)}</b>`,time:"Ahora",unread:true,color:"#d4af37"};S.notifications.unshift(_n);saveMeeting(m);notifyMeeting(m,invites,modality);addNotif(_n);closeDrawer();S.ui.view="reuniones";render();toast(invites.length?`📧 Invitación enviada por correo a ${invites.length} ${invites.length===1?'persona':'personas'}`:"Reunión convocada");};
   foot.appendChild(cancel);foot.appendChild(btn);
   openDrawer("Convocar reunión","Invita por correo y les llega el enlace",body,foot);
 }
