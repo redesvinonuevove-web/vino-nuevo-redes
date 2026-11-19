@@ -964,7 +964,7 @@ function render(){
   renderShell();
   const c=$("#content");c.innerHTML="";
   const v=S.ui.view;
-  const map={dashboard:viewDashboard,tareas:viewTareas,calendario:viewCalendario,ideas:viewIdeas,reuniones:viewReuniones,servicios:viewServicios,pastoral:viewPastoral,usuarios:viewUsuarios,roles:viewRoles,ayuda:()=>viewPlaceholder("Ayuda",I.help,"Guías rápidas, flujo de trabajo y soporte para el equipo de redes. (Lo armamos en la siguiente etapa.)")};
+  const map={dashboard:viewDashboard,tareas:viewTareas,calendario:viewCalendario,ideas:viewIdeas,reuniones:viewReuniones,servicios:viewServicios,pastoral:viewPastoral,usuarios:viewUsuarios,roles:viewRoles,ayuda:viewAyuda};
   c.appendChild((map[v]||viewDashboard)());
   window.scrollTo({top:0,behavior:"instant"});
 }
@@ -1018,11 +1018,12 @@ function myDeliveriesCard(){
 }
 function progressCard(){
   const c=el("div","card sec-card");const total=S.tasks.length,pub=S.tasks.filter(t=>t.status==="completado").length,prog=S.tasks.filter(t=>["edicion","revision","publicar","programar"].includes(t.status)).length;
-  const pct=Math.round(pub/total*100),C=Math.PI*70,pubLen=C*(pub/total),progLen=C*(prog/total);
+  const pct=total?Math.round(pub/total*100):0,C=Math.PI*70,pubLen=total?C*(pub/total):0,progLen=total?C*(prog/total):0;
   c.innerHTML=`<div class="sec-head"><h2>Progreso</h2></div><div class="donut-wrap"><div class="donut"><svg viewBox="0 0 180 100" width="180" height="100"><path d="M20 95 A70 70 0 0 1 160 95" fill="none" stroke="var(--panel-2)" stroke-width="18" stroke-linecap="round"/><path d="M20 95 A70 70 0 0 1 160 95" fill="none" stroke="var(--gold)" stroke-width="18" stroke-linecap="round" stroke-dasharray="${progLen} 999" stroke-dashoffset="${-pubLen}"/><path d="M20 95 A70 70 0 0 1 160 95" fill="none" stroke="var(--wine)" stroke-width="18" stroke-linecap="round" stroke-dasharray="${pubLen} 999"/></svg><div class="pct"><div class="n">${pct}%</div><div class="l">Publicado</div></div></div><div class="legend"><span><span class="d" style="background:var(--wine)"></span>Publicado</span><span><span class="d" style="background:var(--gold)"></span>En proceso</span><span><span class="d hatch"></span>Pendiente</span></div></div>`;return c;
 }
 function reminderCard(){
   const m=S.meetings.slice().sort((a,b)=>daysUntil(a.date)-daysUntil(b.date))[0];const c=el("div","card reminder");
+  if(!m){c.innerHTML=`<div class="sec-head" style="margin-bottom:6px"><h2>Recordatorio</h2></div><div style="font-size:13px;color:var(--muted);padding:6px 0 2px">No hay reuniones agendadas todavía.</div>`;if(can("manage")){const b=el("button","btn btn-ghost",I.plus+"Convocar reunión");b.onclick=()=>{S.ui.view="reuniones";render();};c.appendChild(b);}return c;}
   c.innerHTML=`<div class="sec-head" style="margin-bottom:6px"><h2>Recordatorio</h2></div><div class="rtitle">${esc(m.title)}</div><div class="rtime">${I.clock}${fmtDate(m.date)} · ${m.time}</div>`;
   const btn=el("button","btn btn-pri",I.video+(m.modality==="virtual"?"Entrar a la reunión":"Ver detalles"));btn.onclick=()=>{S.ui.view="reuniones";render();};c.appendChild(btn);return c;
 }
@@ -1429,6 +1430,31 @@ function viewRoles(){
   const demo=el("div","card");demo.style.cssText="padding:19px;margin-top:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-radius:var(--r-lg)";demo.innerHTML=`<div style="flex:1;min-width:200px"><div style="font-weight:700;font-size:14px">Permiso de Planificador para ${me().name}</div><div style="font-size:12.5px;color:var(--muted);margin-top:2px">Pruébalo: actívalo y mira cómo aparece el botón «Nueva tarea».</div></div>`;const tg=el("button","btn "+(me().planner?"btn-gold":"btn-ghost"),me().planner?I.check+"Activado":"Activar");tg.onclick=()=>{me().planner=!me().planner;saveProfile(me());toast(me().planner?"Planificador activado":"Planificador desactivado");render();};demo.appendChild(tg);wrap.appendChild(demo);return wrap;
 }
 function viewPlaceholder(title,icon,desc){const wrap=el("div");const head=el("div","page-head");head.innerHTML=`<div><h1>${title}</h1></div>`;wrap.appendChild(head);wrap.appendChild(el("div","card ph",icon+`<h3>${title}</h3><p>${desc}</p>`));return wrap;}
+function viewAyuda(){
+  const wrap=el("div");const head=el("div","page-head");head.innerHTML=`<div><h1>Ayuda</h1><div class="sub">Guía rápida y preguntas frecuentes del equipo de redes</div></div>`;wrap.appendChild(head);
+  const faqs=[
+    {q:"¿Cómo creo una tarea (una pieza de contenido)?",a:"Dale al botón <b>“Nueva tarea”</b> (arriba en <b>Tareas</b> o en el <b>Calendario</b>). Ponle un título, elige el tipo (Reel, Carrusel, Historia…), asigna quién <b>diseña</b>, <b>redacta</b> y <b>publica</b>, pon la fecha de entrega y de publicación, y dale <b>Crear</b>. Solo el liderazgo y quienes tengan el permiso de <b>Planificador</b> pueden crear tareas."},
+    {q:"¿Cómo cambio el estado de una tarea?",a:"Abre la tarea y arriba verás los estados: <b>Por hacer</b> (rojo), <b>Pendiente por edición</b> (amarillo), <b>En revisión</b> (morado), <b>Pendiente por publicar</b> (azul), <b>Por programar</b> y <b>Completado</b> (verde). Toca el que corresponda. En la vista de <b>Tablero</b> también puedes arrastrar la tarjeta de una columna a otra."},
+    {q:"¿Cómo subo un video o una foto a una tarea?",a:"Abre la tarea y baja hasta la sección <b>“Archivos (Google Drive)”</b>. Dale a <b>“Subir a Drive”</b> y elige el archivo. Se guarda en la carpeta compartida del equipo y todos podrán <b>previsualizarlo</b> y <b>descargarlo</b> desde ahí. Con <b>“Abrir carpeta en Drive”</b> ves todo junto."},
+    {q:"¿Cómo comento y menciono a alguien?",a:"En la tarea, baja a <b>Comentarios</b>, escribe tu mensaje y para avisar a alguien toca su chip <b>@Nombre</b> (o escribe @ y su nombre). A esa persona le llega una <b>notificación</b> en la campanita 🔔 y también a su correo."},
+    {q:"¿Cómo agrego un enlace a una tarea o idea?",a:"Al crear o editar la tarea, en <b>“Links y adjuntos”</b> agrega el nombre y <b>pega el enlace completo</b> (con https://). En el detalle de la tarea el enlace queda <b>clicable</b>. En el <b>banco de ideas</b>, cualquier enlace que pegues en la descripción también se vuelve clicable."},
+    {q:"¿Cómo agendo una reunión?",a:"Ve al menú <b>Reuniones</b> y dale a <b>“Convocar reunión”</b>. Pon título, fecha, hora, modalidad y agrega a los invitados por <b>correo</b>. A cada invitado le llega la invitación <b>por correo</b> con el branding de Vino Nuevo, y puede confirmar su asistencia desde la app. <i>(Por ahora las invitaciones van por correo; no crean evento en Google Calendar.)</i>"},
+    {q:"¿Cómo armo los servidores / servicios?",a:"En el <b>Calendario</b> dale al botón <b>“Servidores”</b> (o entra al menú <b>Servicios</b>). Elige el <b>día</b> (los fijos suelen ser martes y domingos; los especiales, algunos viernes o sábados) y asigna quién cubre cada rol (Fotografía, Video/Reel, etc.). El servicio aparece marcado en el calendario en morado, y cada persona confirma si está disponible."},
+    {q:"¿Qué significa el banco de ideas?",a:"Es para guardar <b>moodboards y conceptos</b> de eventos grandes: líneas de conferencias, temas del mes, campañas. Agrega una idea con <b>“Nueva idea”</b>, y cuando esté lista el liderazgo puede <b>convertirla en tarea</b> con un clic."},
+    {q:"¿Para qué sirve el dashboard?",a:"Es tu <b>panorama</b>: se alimenta de las tareas, reuniones e ideas que el equipo va creando. Muestra cuántas tareas hay, cuáles están en revisión, tus próximas entregas, las próximas publicaciones y el progreso. Al principio se ve con pocos números porque hay poco contenido; se va llenando a medida que usan la app."},
+    {q:"Olvidé mi contraseña, ¿qué hago?",a:"En la pantalla de inicio de sesión, dale a <b>“¿Olvidaste tu contraseña?”</b>, escribe tu correo y recibirás un enlace para crear una nueva."},
+    {q:"¿Quién puede hacer qué (roles)?",a:"El <b>Liderazgo</b> gestiona, edita y aprueba todo y administra usuarios. El <b>Equipo</b> ve el calendario, sus tareas y el banco de ideas, y confirma asistencia. El <b>Pastor</b> ve los contenidos y deja comentarios. El permiso de <b>Planificador</b> se le puede activar a cualquiera del equipo para que pueda crear tareas y armar el calendario."},
+  ];
+  const list=el("div");list.style.cssText="display:flex;flex-direction:column;gap:10px";
+  faqs.forEach(f=>{const item=el("div","card");item.style.cssText="padding:0;overflow:hidden";
+    const qd=el("div");qd.style.cssText="padding:15px 18px;font-weight:700;font-size:14.5px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer";qd.innerHTML=`<span>${esc(f.q)}</span><span class="faq-ar" style="color:var(--wine-2);font-size:20px;flex:none">+</span>`;
+    const ad=el("div");ad.style.cssText="max-height:0;overflow:hidden;transition:max-height .28s ease;font-size:13.5px;line-height:1.65;color:var(--muted)";ad.innerHTML=`<div style="padding:0 18px 16px">${f.a}</div>`;
+    let open=false;qd.onclick=()=>{open=!open;ad.style.maxHeight=open?(ad.scrollHeight+40)+"px":"0";qd.querySelector(".faq-ar").textContent=open?"–":"+";};
+    item.appendChild(qd);item.appendChild(ad);list.appendChild(item);});
+  wrap.appendChild(list);
+  const foot=el("div","card");foot.style.cssText="margin-top:16px;padding:16px 18px;font-size:13px;color:var(--muted)";foot.innerHTML=`¿Tienes otra duda o algo no funciona? Escríbele al <b>líder de redes</b> para que lo resolvamos. 🙌`;wrap.appendChild(foot);
+  return wrap;
+}
 
 /* ═══════════ DRAWER ═══════════ */
 let drawerOpen=false;
