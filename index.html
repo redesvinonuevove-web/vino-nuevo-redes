@@ -769,6 +769,7 @@ function driveMediaSection(t){
 /* ===== Menciones (@) en comentarios ===== */
 function parseMentions(text){const ids=[];(S.users||[]).filter(u=>u.active).forEach(u=>{const fn=firstName(u.name||"");if(!fn)return;const re=new RegExp("@"+fn.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");if(re.test(text))ids.push(u.id);});return [...new Set(ids)];}
 function renderMentions(text){let out=esc(text);(S.users||[]).filter(u=>u.active).forEach(u=>{const fn=firstName(u.name||"");if(!fn)return;const re=new RegExp("@"+fn.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","gi");out=out.replace(re,'<b style="color:var(--wine-2)">@'+esc(fn)+'</b>');});return out;}
+function linkify(text){return esc(text||"").replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--wine-2);text-decoration:underline;word-break:break-all">$1</a>');}
 function commentComposer(t,reopen){
   const wrap=el("div");
   const add=el("div","inline-add");const inp=el("input","input");inp.placeholder="Escribe un comentario… (@ para mencionar)";const sendb=el("button","btn btn-pri btn-sm",I.arrow);sendb.type="button";
@@ -1252,7 +1253,7 @@ function ideaCard(i){
 }
 function openIdeaDetail(id){
   const i=S.ideas.find(x=>x.id===id);if(!i)return;const body=el("div");
-  body.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><span class="trend">${i.type}</span><span class="idea-st">${IDEA_ST[i.status].label}</span></div><p style="font-size:14px;line-height:1.6;margin:0 0 6px">${esc(i.desc)}</p><div class="d-row"><span class="k">Propuesta por</span><span class="v" style="display:flex;align-items:center;gap:8px">${av(i.by)}${user(i.by).name}</span></div>`;
+  body.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><span class="trend">${i.type}</span><span class="idea-st">${IDEA_ST[i.status].label}</span></div><p style="font-size:14px;line-height:1.6;margin:0 0 6px;white-space:pre-wrap">${linkify(i.desc)}</p><div class="d-row"><span class="k">Propuesta por</span><span class="v" style="display:flex;align-items:center;gap:8px">${av(i.by)}${user(i.by).name}</span></div>`;
   if(can("manage")){const sc=el("div");sc.style.marginTop="16px";sc.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:9px">ESTADO DE LA IDEA</div>`;const ps=el("div","pickset");Object.entries(IDEA_ST).forEach(([k,s])=>{const b=el("button","pick"+(i.status===k?" on":""),s.label);b.onclick=()=>{i.status=k;saveIdea(i);closeDrawer();render();toast("Idea: "+s.label);};ps.appendChild(b);});sc.appendChild(ps);body.appendChild(sc);}
   const cs=el("div","d-sect");cs.innerHTML=`<div class="dt">Comentarios (${(i.comments||[]).length})</div>`;
   (i.comments||[]).forEach(cm=>cs.appendChild(el("div","d-comment",`${av(cm.by)}<div class="dc"><div class="dn">${user(cm.by).name} <span style="font-weight:400;color:var(--faint);font-size:11px">${cm.time}</span></div><div class="db">${renderMentions(cm.body)}</div></div>`)));
@@ -1445,7 +1446,7 @@ function openTaskDetail(id){
   const t=S.tasks.find(x=>x.id===id);if(!t)return;
   if(can("createTask"))return openTaskForm(t,t.id);
   const body=el("div");
-  body.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${statusPill(t.status)}${prioPill(t.priority)}<span class="pill" style="background:color-mix(in srgb,${AREAS[t.area].color} 15%,transparent);color:${AREAS[t.area].color}"><span class="d" style="background:${AREAS[t.area].color}"></span>${AREAS[t.area].label}</span><span class="pill" style="background:var(--panel-2);color:var(--muted)">${t.type}</span></div><p style="font-size:14px;line-height:1.6;margin:0 0 6px">${esc(t.desc)}</p>`;
+  body.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${statusPill(t.status)}${prioPill(t.priority)}<span class="pill" style="background:color-mix(in srgb,${AREAS[t.area].color} 15%,transparent);color:${AREAS[t.area].color}"><span class="d" style="background:${AREAS[t.area].color}"></span>${AREAS[t.area].label}</span><span class="pill" style="background:var(--panel-2);color:var(--muted)">${t.type}</span></div><p style="font-size:14px;line-height:1.6;margin:0 0 6px;white-space:pre-wrap">${linkify(t.desc)}</p>`;
   if((t.networks||[]).length){const nn=el("div");nn.style.cssText="display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 2px";nn.innerHTML=t.networks.map(netPill).join("");body.appendChild(nn);}
   if(t.caption){const cap=el("div");cap.style.cssText="margin-top:14px";cap.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px">CAPTION / COPY</div><div style="font-size:13.5px;line-height:1.55;background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:12px 14px">${esc(t.caption)}</div>`;body.appendChild(cap);}
   // checklist
