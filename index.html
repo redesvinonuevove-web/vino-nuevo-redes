@@ -1276,7 +1276,14 @@ function viewReuniones(){
 function meetCard(m){
   const d=new Date(m.date+"T00:00:00");const my=m.rsvp[me().id]||null;const c=el("div","card meet");const modCls=m.modality==="presencial"?"mod-pres":"mod-virt";
   c.innerHTML=`<div class="mhead"><div class="caldate"><div class="mo">${MO[d.getMonth()]}</div><div class="dy">${d.getDate()}</div></div><div style="min-width:0"><h3>${esc(m.title)}</h3><div class="mline">${I.clock}<span>${fmtDate(m.date)} · ${m.time}</span><span class="modality ${modCls}">${m.modality}</span></div></div></div><div class="agenda"><b>Agenda:</b> ${esc(m.agenda)}</div><div class="rsvp"><button class="rbtn${my==='yes'?' on-yes':''}" data-r="yes">${I.check}Asistiré</button><button class="rbtn${my==='late'?' on-late':''}" data-r="late">${I.clock}Llego tarde</button><button class="rbtn${my==='no'?' on-no':''}" data-r="no">${I.x}No podré</button></div>`;
-  if(m.meetLink){const mb=el("a","btn btn-pri btn-sm",I.video.replace('<svg ','<svg width="15" height="15" ')+"Entrar a Google Meet");mb.href=m.meetLink;mb.target="_blank";mb.rel="noopener";mb.style.cssText="text-decoration:none;margin-top:10px;width:100%;justify-content:center";c.appendChild(mb);}
+  if(m.meetLink){
+    const box=el("div");box.style.cssText="margin-top:11px;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--panel-2)";
+    box.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.02em;margin-bottom:6px">ENLACE DE LA REUNIÓN (Google Meet)</div><a href="${esc(m.meetLink)}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--wine-2);text-decoration:underline;word-break:break-all;font-weight:600">${esc(m.meetLink)}</a>`;
+    const btns=el("div");btns.style.cssText="display:flex;gap:8px;margin-top:10px";
+    const mb=el("a","btn btn-pri btn-sm",I.video.replace('<svg ','<svg width="15" height="15" ')+"Entrar");mb.href=m.meetLink;mb.target="_blank";mb.rel="noopener";mb.style.cssText="text-decoration:none;flex:1;justify-content:center";
+    const cp=el("button","btn btn-ghost btn-sm",I.link.replace('<svg ','<svg width="15" height="15" ')+"Copiar enlace");cp.style.cssText="flex:1;justify-content:center";cp.onclick=()=>copyText(m.meetLink,"Enlace de la reunión copiado ✓");
+    btns.appendChild(mb);btns.appendChild(cp);box.appendChild(btns);c.appendChild(box);
+  }
   else if(m.eventLink){const mb=el("a","btn btn-ghost btn-sm",I.cal.replace('<svg ','<svg width="15" height="15" ')+"Ver en Google Calendar");mb.href=m.eventLink;mb.target="_blank";mb.rel="noopener";mb.style.cssText="text-decoration:none;margin-top:10px;width:100%;justify-content:center";c.appendChild(mb);}
   const conf=Object.entries(m.rsvp).filter(([_,v])=>v);if(conf.length){const rl=el("div","rsvp-list");conf.forEach(([uid,v])=>{const tag={yes:"Asistirá",late:"Llega tarde",no:"No podrá"}[v];rl.appendChild(el("span","who-mini",av(uid)+`<span>${user(uid).name} · ${tag}</span>`));});c.appendChild(rl);}
   const notes=Object.entries(m.notes||{}).filter(([uid,txt])=>txt&&m.rsvp[uid]==="no");
