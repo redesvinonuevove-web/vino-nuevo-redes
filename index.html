@@ -238,6 +238,11 @@ svg{display:block}
 .fdrop .fopt.sel{background:var(--wine-soft);color:var(--wine-2)}
 .fdrop .fopt .fcheck{margin-left:auto;display:inline-flex;opacity:0;color:var(--wine-2)}
 .fdrop .fopt.sel .fcheck{opacity:1}
+/* arrastrar tareas en el calendario */
+.cal-ghost{position:fixed;z-index:999;pointer-events:none;opacity:.95;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.3);transform:scale(1.02)}
+.drag-src{opacity:.35}
+.day-col[data-day].day-drop,.mcell[data-day].day-drop{outline:2px dashed var(--wine-2);outline-offset:-2px;background:var(--wine-soft)!important}
+.mini[data-drag],.mdot[data-drag]{cursor:grab}
 
 .grid{display:grid;gap:16px}
 .cols-auto{grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr))}
@@ -709,7 +714,7 @@ const NETWORKS={instagram:{label:"Instagram",color:"#d6336c"},facebook:{label:"F
 const PRIORITY={alta:{label:"Alta",color:"var(--prio-alta)"},media:{label:"Media",color:"var(--prio-media)"},baja:{label:"Baja",color:"var(--prio-baja)"}};
 const IDEA_TYPES=["Concepto"];
 const IDEA_ST={nueva:{label:"Nueva"},evaluando:{label:"En evaluación"},aprobada:{label:"Aprobada"},convertida:{label:"Convertida"}};
-const SERVICE_ROLES=["Fotografía","Video / Reel","Historias en vivo","Transmisión","Publicaciones"];
+const SERVICE_ROLES=["Redes sociales 1","Redes sociales 2","Fotografía"];
 const AVAIL={si:{label:"Disponible",color:"var(--st-apro)"},no:{label:"No disponible",color:"var(--wine)"}};
 const AV_PALETTE=["#7a1427","#9a1b32","#b8862b","#c0683a","#8a2e46","#a8742f"];
 
@@ -1271,13 +1276,37 @@ function viewCalendario(){
 }
 function addOn(dateIso){if(!can("createTask")){toast("No tienes permiso para crear tareas");return;}openTaskForm({publish:dateIso,due:dateIso});}
 function addDayButton(dateIso,label){const b=el("button","add-day",I.plus+(label?`<span>${label}</span>`:""));b.onclick=e=>{e.stopPropagation();addOn(dateIso);};return b;}
-function miniTask(t){const s=STATUS[t.status];const c=el("div","mini");c.style.background=`color-mix(in srgb,${s.color} 12%,var(--panel))`;c.style.borderColor=`color-mix(in srgb,${s.color} 38%,var(--line))`;const dis=t.assignees.diseno,pub=t.assignees.publica;const stack=`<div class="stack mini-stack" title="Diseña: ${esc(user(dis).name)} · Publica: ${esc(user(pub).name)}">${av(dis)}${pub!==dis?av(pub):""}</div>`;c.innerHTML=`<span class="mrail" style="background:${s.color}"></span><div class="tt" style="${doneStyle(t)}">${esc(t.title)}</div><div class="mm"><span class="st-min" style="background:color-mix(in srgb,${s.color} 20%,transparent);color:${s.color}">${s.label}</span>${stack}</div>`;c.onclick=()=>openTaskDetail(t.id);return c;}
+let _calDragged=false;
+function moveTaskToDate(tid,dISO){const t=S.tasks.find(x=>x.id===tid);if(!t||!dISO||t.publish===dISO)return;t.publish=dISO;saveTask(t);render();toast("Tarea movida al "+fmtDate(dISO));}
+function calDrag(elm,tid){
+  if(!can("createTask"))return;elm.setAttribute("data-drag","1");
+  elm.addEventListener("pointerdown",ev=>{
+    if(ev.button&&ev.button!==0)return;
+    const touch=ev.pointerType==="touch";const sx=ev.clientX,sy=ev.clientY;
+    let dragging=false,clone=null,lastCell=null,armed=!touch,lp=null;
+    const arm=()=>{armed=true;try{elm.setPointerCapture(ev.pointerId);}catch(_){}elm.style.touchAction="none";if(navigator.vibrate)try{navigator.vibrate(12);}catch(_){}elm.classList.add("drag-src");};
+    if(touch)lp=setTimeout(arm,260);
+    const onMove=e=>{
+      const dist=Math.hypot(e.clientX-sx,e.clientY-sy);
+      if(!armed){if(touch&&dist>10){clearTimeout(lp);cleanup();}return;}
+      if(!dragging){if(dist<6)return;dragging=true;_calDragged=true;if(!touch){try{elm.setPointerCapture(ev.pointerId);}catch(_){}}clone=elm.cloneNode(true);clone.className=(elm.className||"").replace("drag-src","")+" cal-ghost";clone.style.width=elm.offsetWidth+"px";document.body.appendChild(clone);elm.classList.add("drag-src");}
+      clone.style.left=(e.clientX-elm.offsetWidth/2)+"px";clone.style.top=(e.clientY-16)+"px";
+      clone.style.display="none";const under=document.elementFromPoint(e.clientX,e.clientY);clone.style.display="";
+      const cell=under&&under.closest?under.closest("[data-day]"):null;
+      if(cell!==lastCell){if(lastCell)lastCell.classList.remove("day-drop");lastCell=cell;if(cell)cell.classList.add("day-drop");}
+    };
+    function cleanup(){window.removeEventListener("pointermove",onMove);window.removeEventListener("pointerup",onUp);elm.style.touchAction="";}
+    const onUp=()=>{clearTimeout(lp);cleanup();elm.classList.remove("drag-src");if(dragging){if(clone)clone.remove();if(lastCell){lastCell.classList.remove("day-drop");moveTaskToDate(tid,lastCell.getAttribute("data-day"));}setTimeout(()=>{_calDragged=false;},60);}};
+    window.addEventListener("pointermove",onMove);window.addEventListener("pointerup",onUp);
+  });
+}
+function miniTask(t){const s=STATUS[t.status];const c=el("div","mini");c.style.background=`color-mix(in srgb,${s.color} 12%,var(--panel))`;c.style.borderColor=`color-mix(in srgb,${s.color} 38%,var(--line))`;const dis=t.assignees.diseno,pub=t.assignees.publica;const stack=`<div class="stack mini-stack" title="Diseña: ${esc(user(dis).name)} · Publica: ${esc(user(pub).name)}">${av(dis)}${pub!==dis?av(pub):""}</div>`;c.innerHTML=`<span class="mrail" style="background:${s.color}"></span><div class="tt" style="${doneStyle(t)}">${esc(t.title)}</div><div class="mm"><span class="st-min" style="background:color-mix(in srgb,${s.color} 20%,transparent);color:${s.color}">${s.label}</span>${stack}</div>`;c.onclick=()=>{if(_calDragged)return;openTaskDetail(t.id);};return c;}
 function miniService(sv){const COL="#8b5cf6";const c=el("div","mini");c.style.background=`color-mix(in srgb,${COL} 13%,var(--panel))`;c.style.borderColor=`color-mix(in srgb,${COL} 42%,var(--line))`;const people=[...new Set((sv.assign||[]).map(a=>firstName((user(a.user)||{}).name||"")).filter(Boolean))].slice(0,4).join(", ");c.innerHTML=`<span class="mrail" style="background:${COL}"></span><div class="tt">${esc(sv.title)}</div><div class="mm"><span class="st-min" style="background:color-mix(in srgb,${COL} 20%,transparent);color:${COL}">Servidores</span></div>${people?`<div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(sv.time||"")}${sv.time?" · ":""}${esc(people)}</div>`:""}`;c.onclick=()=>{S.ui.view="servicios";render();};return c;}
 function calWeek(){
   const wrap=el("div");
   wrap.appendChild(el("div","cal-legend",`<span class="lg">${I.roles.replace('<svg ','<svg width="13" height="13" ')} Diseña</span><span class="lg">${I.arrow.replace('<svg ','<svg width="13" height="13" ')} Publica</span><span>En cada pieza, el <b>1.º</b> avatar diseña y el <b>2.º</b> publica.</span>`));
   const box=el("div","cal-week");const start=new Date(today);const dow=(start.getDay()+6)%7;start.setDate(start.getDate()-dow);const tasks=visibleTasks();
-  for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const dISO=iso(d);const col=el("div","day-col");const isT=d.getTime()===today.getTime();col.innerHTML=`<div class="day-head${isT?' today':''}"><div class="dn">${DN[d.getDay()]}</div><div class="dd">${d.getDate()}</div></div>`;const slot=el("div","slot");const dt=tasks.filter(t=>t.publish===dISO);dt.forEach(t=>slot.appendChild(miniTask(t)));const dsv=S.services.filter(s=>s.date===dISO);dsv.forEach(s=>slot.appendChild(miniService(s)));if(can("createTask"))slot.appendChild(addDayButton(dISO,(dt.length||dsv.length)?"":"Agregar"));else if(!dt.length&&!dsv.length){const e=el("div");e.style.cssText="font-size:11px;color:var(--faint);text-align:center;padding:8px 0";e.textContent="—";slot.appendChild(e);}col.appendChild(slot);box.appendChild(col);}
+  for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const dISO=iso(d);const col=el("div","day-col");col.dataset.day=dISO;const isT=d.getTime()===today.getTime();col.innerHTML=`<div class="day-head${isT?' today':''}"><div class="dn">${DN[d.getDay()]}</div><div class="dd">${d.getDate()}</div></div>`;const slot=el("div","slot");const dt=tasks.filter(t=>t.publish===dISO);dt.forEach(t=>{const mt=miniTask(t);calDrag(mt,t.id);slot.appendChild(mt);});const dsv=S.services.filter(s=>s.date===dISO);dsv.forEach(s=>slot.appendChild(miniService(s)));if(can("createTask"))slot.appendChild(addDayButton(dISO,(dt.length||dsv.length)?"":"Agregar"));else if(!dt.length&&!dsv.length){const e=el("div");e.style.cssText="font-size:11px;color:var(--faint);text-align:center;padding:8px 0";e.textContent="—";slot.appendChild(e);}col.appendChild(slot);box.appendChild(col);}
   wrap.appendChild(box);return wrap;
 }
 function calMonth(){
@@ -1289,16 +1318,32 @@ function calMonth(){
   const wr=el("div","weekday-row");["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].forEach(x=>wr.appendChild(el("span","",x)));wrap.appendChild(wr);
   const grid=el("div","cal-month");const firstDow=(base.getDay()+6)%7,dim=new Date(base.getFullYear(),base.getMonth()+1,0).getDate();const tasks=visibleTasks();
   for(let i=0;i<firstDow;i++)grid.appendChild(el("div","mcell dim"));
-  for(let dn=1;dn<=dim;dn++){const d=new Date(base.getFullYear(),base.getMonth(),dn);const dISO=iso(d);const isT=d.getTime()===today.getTime();const c=el("div","mcell"+(isT?" is-today":""));c.innerHTML=`<div class="mnum">${dn}</div>`;const dt=tasks.filter(t=>t.publish===dISO);dt.slice(0,3).forEach(t=>{const dot=el("div","mdot");dot.innerHTML=`<span class="d" style="background:${STATUS[t.status].color}"></span><span style="${doneStyle(t)}">${esc(t.title)}</span>`;dot.onclick=e=>{e.stopPropagation();openTaskDetail(t.id);};c.appendChild(dot);});if(dt.length>3)c.appendChild(el("div","mdot","+"+(dt.length-3)+" más"));S.services.filter(s=>s.date===dISO).forEach(s=>{const sdot=el("div","mdot");sdot.innerHTML=`<span class="d" style="background:#8b5cf6"></span><span style="color:#8b5cf6;font-weight:700">Servidores</span>`;sdot.onclick=e=>{e.stopPropagation();S.ui.view="servicios";render();};c.appendChild(sdot);});if(can("createTask")){c.classList.add("clickable");const ap=el("button","add-plus",I.plus);ap.setAttribute("aria-label","Agregar pieza");ap.onclick=e=>{e.stopPropagation();addOn(dISO);};c.appendChild(ap);c.onclick=e=>{if(e.target.closest(".mdot"))return;addOn(dISO);};}grid.appendChild(c);}
+  for(let dn=1;dn<=dim;dn++){const d=new Date(base.getFullYear(),base.getMonth(),dn);const dISO=iso(d);const isT=d.getTime()===today.getTime();const c=el("div","mcell"+(isT?" is-today":""));c.dataset.day=dISO;c.innerHTML=`<div class="mnum">${dn}</div>`;const dt=tasks.filter(t=>t.publish===dISO);dt.slice(0,3).forEach(t=>{const dot=el("div","mdot");dot.innerHTML=`<span class="d" style="background:${STATUS[t.status].color}"></span><span style="${doneStyle(t)}">${esc(t.title)}</span>`;dot.onclick=e=>{e.stopPropagation();if(_calDragged)return;openTaskDetail(t.id);};calDrag(dot,t.id);c.appendChild(dot);});if(dt.length>3)c.appendChild(el("div","mdot","+"+(dt.length-3)+" más"));S.services.filter(s=>s.date===dISO).forEach(s=>{const sdot=el("div","mdot");sdot.innerHTML=`<span class="d" style="background:#8b5cf6"></span><span style="color:#8b5cf6;font-weight:700">Servidores</span>`;sdot.onclick=e=>{e.stopPropagation();S.ui.view="servicios";render();};c.appendChild(sdot);});if(can("createTask")){c.classList.add("clickable");const ap=el("button","add-plus",I.plus);ap.setAttribute("aria-label","Agregar pieza");ap.onclick=e=>{e.stopPropagation();addOn(dISO);};c.appendChild(ap);c.onclick=e=>{if(_calDragged)return;if(e.target.closest(".mdot"))return;addOn(dISO);};}grid.appendChild(c);}
   wrap.appendChild(grid);return wrap;
 }
+function calListSecLabel(txt){const d=el("div");d.style.cssText="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin:6px 2px 10px";d.textContent=txt;return d;}
 function calList(){
   const wrap=el("div");const tasks=visibleTasks().slice().sort((a,b)=>new Date(a.publish)-new Date(b.publish));
   const groups={};tasks.forEach(t=>{(groups[t.publish]=groups[t.publish]||[]).push(t);});
-  S.services.forEach(s=>{if(s.date)(groups[s.date]=groups[s.date]||[]).push({_svc:s});});
   const keys=Object.keys(groups).sort();
-  if(!keys.length){wrap.appendChild(el("div","empty",I.cal+"<h3>Sin publicaciones</h3><p>No hay piezas con estos filtros.</p>"));if(can("createTask")){const holder=el("div");holder.style.cssText="max-width:280px;margin:0 auto";const a=addDayButton(iso(dayOffset(0)),"Agregar pieza");holder.appendChild(a);wrap.appendChild(holder);}return wrap;}
-  keys.forEach(k=>{const g=el("div","cal-list-group");g.appendChild(el("div","cal-list-date",`${fmtDate(k)}<span class="cnt">${groups[k].length} ${groups[k].length===1?'pieza':'piezas'}</span>`));const box=el("div","tlist");groups[k].forEach(it=>{if(it&&it._svc){const sv=it._svc;const srow=el("div","tlist-row");srow.style.cursor="pointer";srow.innerHTML=`<div class="tt"><span class="rail-s" style="background:#8b5cf6"></span><div class="tx"><div class="nm">${esc(sv.title)}</div><div class="sm">Servidores del día</div></div></div><div><span class="pill" style="background:color-mix(in srgb,#8b5cf6 15%,transparent);color:#8b5cf6"><span class="d" style="background:#8b5cf6"></span>Servidores</span></div><div></div><div></div><div class="stack"></div>`;srow.onclick=()=>{S.ui.view="servicios";render();};box.appendChild(srow);return;}const t=it;const row=el("div","tlist-row");row.innerHTML=`<div class="tt"><span class="rail-s" style="background:${STATUS[t.status].color}"></span><div class="tx"><div class="nm" style="${doneStyle(t)}">${esc(t.title)}</div><div class="sm">${t.type}</div></div></div><div>${statusPill(t.status)}</div><div><span style="font-size:13px;font-weight:600;color:${AREAS[t.area].color}">${AREAS[t.area].label}</span></div><div>${prioPill(t.priority)}</div><div class="stack" style="justify-content:flex-end">${av(t.assignees.diseno)}</div>`;row.onclick=()=>openTaskDetail(t.id);box.appendChild(row);});g.appendChild(box);if(can("createTask")){const a=addDayButton(k,"Agregar pieza este día");a.style.marginTop="9px";g.appendChild(a);}wrap.appendChild(g);});
+  const svcs=S.services.slice().filter(s=>s.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  /* ── Servidores (lista aparte, para que no se mezcle con el contenido) ── */
+  if(svcs.length){
+    wrap.appendChild(calListSecLabel("Servidores"));
+    const g=el("div","cal-list-group");const box=el("div","tlist");
+    svcs.forEach(sv=>{const people=[...new Set((sv.assign||[]).map(a=>firstName((user(a.user)||{}).name||"")).filter(Boolean))].join(", ");const row=el("div","tlist-row");row.style.cursor="pointer";row.innerHTML=`<div class="tt"><span class="rail-s" style="background:#8b5cf6"></span><div class="tx"><div class="nm">${esc(sv.title)}</div><div class="sm">${fmtDate(sv.date)}${sv.time?" · "+esc(sv.time):""}${people?" · "+esc(people):""}</div></div></div><div><span class="pill" style="background:color-mix(in srgb,#8b5cf6 15%,transparent);color:#8b5cf6"><span class="d" style="background:#8b5cf6"></span>Servidores</span></div><div></div><div></div><div class="stack" style="justify-content:flex-end">${(sv.assign||[]).slice(0,3).map(a=>av(a.user)).join("")}</div>`;row.onclick=()=>{if(can("createTask"))openServiceForm(null,sv);else{S.ui.view="servicios";render();}};box.appendChild(row);});
+    g.appendChild(box);if(can("createTask")){const a=el("button","add-day",I.plus+"<span>Agendar servidores</span>");a.style.marginTop="9px";a.onclick=()=>openServiceForm();g.appendChild(a);}wrap.appendChild(g);
+  }
+
+  /* ── Contenido (piezas de redes) ── */
+  if(svcs.length&&keys.length)wrap.appendChild(calListSecLabel("Contenido"));
+  if(!keys.length){
+    wrap.appendChild(el("div","empty",I.cal+"<h3>Sin publicaciones</h3><p>No hay piezas con estos filtros.</p>"));
+    if(can("createTask")){const holder=el("div");holder.style.cssText="max-width:280px;margin:0 auto";const a=addDayButton(iso(dayOffset(0)),"Agregar pieza");holder.appendChild(a);wrap.appendChild(holder);}
+    return wrap;
+  }
+  keys.forEach(k=>{const g=el("div","cal-list-group");g.appendChild(el("div","cal-list-date",`${fmtDate(k)}<span class="cnt">${groups[k].length} ${groups[k].length===1?'pieza':'piezas'}</span>`));const box=el("div","tlist");groups[k].forEach(t=>{const row=el("div","tlist-row");row.innerHTML=`<div class="tt"><span class="rail-s" style="background:${STATUS[t.status].color}"></span><div class="tx"><div class="nm" style="${doneStyle(t)}">${esc(t.title)}</div><div class="sm">${t.type}</div></div></div><div>${statusPill(t.status)}</div><div><span style="font-size:13px;font-weight:600;color:${AREAS[t.area].color}">${AREAS[t.area].label}</span></div><div>${prioPill(t.priority)}</div><div class="stack" style="justify-content:flex-end">${av(t.assignees.diseno)}</div>`;row.onclick=()=>openTaskDetail(t.id);box.appendChild(row);});g.appendChild(box);if(can("createTask")){const a=addDayButton(k,"Agregar pieza este día");a.style.marginTop="9px";g.appendChild(a);}wrap.appendChild(g);});
   if(can("createTask")){const holder=el("div");holder.style.cssText="max-width:280px;margin:4px auto 0";const a=addDayButton(iso(dayOffset(0)),"Agregar en otra fecha");holder.appendChild(a);wrap.appendChild(holder);}
   return wrap;
 }
@@ -1393,17 +1438,21 @@ function serviceCard(sv){
   c.appendChild(roster);
   c.appendChild(el("div","",`<div style="font-size:11.5px;color:var(--faint);font-weight:600">${confirmed} de ${sv.assign.length} confirmados</div>`));
   if(sv.assign.some(x=>x.user===me().id)){const my=sv.avail[me().id];const rsvp=el("div","rsvp");rsvp.innerHTML=`<button class="rbtn${my==='si'?' on-yes':''}" data-a="si">${I.check}Disponible</button><button class="rbtn${my==='no'?' on-no':''}" data-a="no">${I.x}No podré</button>`;rsvp.querySelectorAll(".rbtn").forEach(b=>b.onclick=()=>{sv.avail[me().id]=b.dataset.a;saveService(sv);render();toast(b.dataset.a==="si"?"Confirmaste tu disponibilidad":"Avisaste que no podrás");});c.appendChild(rsvp);}
+  if(can("createTask")){const edb=el("button","btn btn-ghost btn-sm",I.edit.replace('<svg ','<svg width="15" height="15" ')+"Editar servicio");edb.style.cssText="width:100%;justify-content:center;border-top:1px solid var(--line);border-radius:0;padding-top:13px;margin-top:4px";edb.onclick=()=>openServiceForm(null,sv);c.appendChild(edb);}
   return c;
 }
-function openServiceForm(prefillDate){
-  const body=el("div");
-  body.innerHTML=`<div class="field"><label>Título</label><input class="input" id="sv-title" value="Servicio dominical"></div><div class="row2"><div class="field"><label>Fecha</label><input class="input" type="date" id="sv-date" value="${prefillDate||iso(dayOffset(_sun))}"></div><div class="field"><label>Hora</label><input class="input" id="sv-time" value="10:00 AM"></div></div><div class="sect-sep">Quién sirve en redes</div>`;
+function openServiceForm(prefillDate,existing){
+  const ed=!!existing;const body=el("div");
+  const tv=ed?existing.title:"Servicio dominical";const dv=ed?existing.date:(prefillDate||iso(dayOffset(_sun)));const hv=ed?existing.time:"10:00 AM";
+  body.innerHTML=`<div class="field"><label>Título</label><input class="input" id="sv-title" value="${esc(tv)}"></div><div class="row2"><div class="field"><label>Fecha</label><input class="input" type="date" id="sv-date" value="${dv}"></div><div class="field"><label>Hora</label><input class="input" id="sv-time" value="${esc(hv)}"></div></div><div class="sect-sep">Quién sirve en redes</div><div style="font-size:12px;color:var(--muted);margin:-4px 0 12px">La fotografía es opcional: déjala en “Sin asignar” si no aplica.</div>`;
   const opts=`<option value="">— Sin asignar —</option>`+S.users.filter(u=>u.active).map(u=>`<option value="${u.id}">${esc(u.name)} · ${esc(u.sub)}</option>`).join("");
-  SERVICE_ROLES.forEach((r,idx)=>{const f=el("div","field");f.innerHTML=`<label>${r}</label><select class="input" data-role="${idx}">${opts}</select>`;body.appendChild(f);});
-  const foot=el("div");foot.style.cssText="display:flex;gap:10px;width:100%";const cancel=el("button","btn btn-ghost","Cancelar");cancel.onclick=()=>closeDrawer();const sv=el("button","btn btn-pri",I.check+"Agendar");
-  sv.onclick=()=>{const assign=[];body.querySelectorAll("select[data-role]").forEach(s=>{if(s.value)assign.push({role:SERVICE_ROLES[+s.dataset.role],user:s.value});});if(!assign.length){toast("Asigna al menos una persona");return;}const avail={};assign.forEach(a=>{if(!(a.user in avail))avail[a.user]=null;});S.services.push({id:uid(),title:body.querySelector("#sv-title").value.trim()||"Servicio dominical",date:body.querySelector("#sv-date").value,time:body.querySelector("#sv-time").value||"10:00 AM",assign,avail});saveService(S.services[S.services.length-1]);closeDrawer();render();toast("Servicio agendado");};
+  SERVICE_ROLES.forEach((r,idx)=>{const f=el("div","field");f.innerHTML=`<label>${r}</label><select class="input" data-role="${idx}">${opts}</select>`;body.appendChild(f);const cur=ed&&existing.assign[idx]?existing.assign[idx].user:"";if(cur)f.querySelector("select").value=cur;});
+  const foot=el("div");foot.style.cssText="display:flex;gap:10px;width:100%";const cancel=el("button","btn btn-ghost","Cancelar");cancel.onclick=()=>closeDrawer();const sv=el("button","btn btn-pri",I.check+(ed?"Guardar cambios":"Agendar"));
+  sv.onclick=()=>{const assign=[];body.querySelectorAll("select[data-role]").forEach(s=>{if(s.value)assign.push({role:SERVICE_ROLES[+s.dataset.role],user:s.value});});if(!assign.length){toast("Asigna al menos una persona");return;}const title=body.querySelector("#sv-title").value.trim()||"Servicio dominical";const date=body.querySelector("#sv-date").value;const time=body.querySelector("#sv-time").value||"10:00 AM";
+    if(ed){const avail={};assign.forEach(a=>{avail[a.user]=(existing.avail&&(a.user in existing.avail))?existing.avail[a.user]:null;});existing.title=title;existing.date=date;existing.time=time;existing.assign=assign;existing.avail=avail;saveService(existing);closeDrawer();render();toast("Servicio actualizado");}
+    else{const avail={};assign.forEach(a=>{if(!(a.user in avail))avail[a.user]=null;});S.services.push({id:uid(),title,date,time,assign,avail});saveService(S.services[S.services.length-1]);closeDrawer();render();toast("Servicio agendado");}};
   foot.appendChild(cancel);foot.appendChild(sv);
-  openDrawer("Agendar servicio","Define quién sirve en redes",body,foot);
+  openDrawer(ed?"Editar servicio":"Agendar servicio","Define quién sirve en redes",body,foot);
 }
 
 /* ═══════════ PASTORAL ═══════════ */
