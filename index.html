@@ -1049,6 +1049,11 @@ function dashStats(){
   if(r==="pastor")return{greet:`Bendiciones, ${firstName(me().name)} 🙏`,sub:"Resumen de los contenidos de la iglesia esta semana.",cards:[{feat:true,lbl:"Contenidos de la semana",val:all.filter(t=>Math.abs(daysUntil(t.publish))<=7).length,foot:"Programados"},{lbl:"Por publicar",val:all.filter(t=>t.status!=="completado").length,foot:"En preparación"},{lbl:"En revisión",val:n(all,"revision"),foot:"Para tu lectura"},{lbl:"Ideas nuevas",val:S.ideas.length,foot:"En el banco"}]};
   return{greet:`Buenas, ${firstName(me().name)} 👋`,sub:"Panorama general del equipo de redes.",cards:[{feat:true,lbl:"Tareas totales",val:all.length,foot:"Este mes"},{lbl:"Publicadas",val:n(all,"completado"),foot:"Ya en redes"},{lbl:"Requieren tu aprobación",val:n(all,"revision"),foot:"En revisión"},{lbl:"Pendientes",val:n(all,"porhacer"),foot:"Sin empezar"}]};
 }
+function myNextService(){const list=S.services.filter(sv=>sv.date&&daysUntil(sv.date)>=0&&(sv.assign||[]).some(x=>x.user===me().id)).sort((a,b)=>daysUntil(a.date)-daysUntil(b.date));if(!list.length)return null;const sv=list[0];const roles=sv.assign.filter(x=>x.user===me().id).map(x=>x.role).join(", ");return {sv,roles};}
+function myServiceNotice(){const n=myNextService();if(!n)return null;const du=daysUntil(n.sv.date);const when=du===0?"hoy":du===1?"mañana":`en ${du} días`;const nt=el("div","notice");nt.style.cssText="border-color:color-mix(in srgb,#8b5cf6 42%,var(--line));background:color-mix(in srgb,#8b5cf6 10%,transparent)";nt.innerHTML=I.serve.replace('<svg ','<svg width="19" height="19" style="color:#8b5cf6" ')+`<div>Te toca servir <b>${when}</b> (${fmtDate(n.sv.date)}) en: <b>${esc(n.roles)}</b>. <a href="#" style="color:#8b5cf6;font-weight:700;text-decoration:underline">Ver y confirmar</a></div>`;nt.querySelector("a").onclick=e=>{e.preventDefault();S.ui.view="servicios";render();};return nt;}
+function myServiceCard(){const n=myNextService();if(!n)return null;const sv=n.sv,du=daysUntil(sv.date),when=du===0?"Hoy":du===1?"Mañana":`En ${du} días`;const COL="#8b5cf6";const c=el("div","card reminder");c.style.borderColor=`color-mix(in srgb,${COL} 40%,var(--line))`;
+  c.innerHTML=`<div class="sec-head" style="margin-bottom:6px"><h2>Te toca servir</h2><span class="pill" style="background:color-mix(in srgb,${COL} 15%,transparent);color:${COL}"><span class="d" style="background:${COL}"></span>${when}</span></div><div class="rtitle">${esc(sv.title)}</div><div class="rtime">${I.serve.replace('<svg ','<svg width="15" height="15" ')}${fmtDate(sv.date)}${sv.time?" · "+esc(sv.time):""}</div><div style="font-size:12.5px;color:var(--muted);margin-top:6px">Tu rol: <b style="color:var(--fg)">${esc(n.roles)}</b></div>`;
+  const btn=el("button","btn btn-pri",I.serve+"Ver mi servicio");btn.style.background=COL;btn.style.borderColor="transparent";btn.onclick=()=>{S.ui.view="servicios";render();};c.appendChild(btn);return c;}
 function viewDashboard(){
   const wrap=el("div");const d=dashStats();
   const head=el("div","page-head");head.innerHTML=`<div><h1>${d.greet}</h1><div class="sub">${d.sub}</div></div>`;
@@ -1063,6 +1068,7 @@ function viewDashboard(){
   colA.appendChild(analyticsCard());
   const sub=el("div","dash-col");sub.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:16px";
   sub.appendChild(me().role==="equipo"?myDeliveriesCard():teamCollabCard());sub.appendChild(progressCard());colA.appendChild(sub);
+  const msc=myServiceCard();if(msc)colB.appendChild(msc);
   colB.appendChild(reminderCard());colB.appendChild(upcomingCard());colB.appendChild(countdownCard());
   g.appendChild(colA);g.appendChild(colB);wrap.appendChild(g);
   if(window.matchMedia("(max-width:620px)").matches)sub.style.gridTemplateColumns="1fr";
@@ -1144,6 +1150,7 @@ function permNotice(kind){
 function viewTareas(){
   const wrap=el("div");const head=el("div","page-head");head.innerHTML=`<div><h1>Tareas</h1><div class="sub">Piezas de contenido del equipo de redes</div></div>`;
   if(can("createTask")){const acts=el("div","head-actions");const tpl=el("button","btn btn-ghost",I.spark+"Plantillas");tpl.onclick=()=>openTemplates();const a=el("button","btn btn-pri",I.plus+"Nueva tarea");a.onclick=()=>openTaskForm();acts.appendChild(tpl);acts.appendChild(a);head.appendChild(acts);}wrap.appendChild(head);
+  const msn=myServiceNotice();if(msn)wrap.appendChild(msn);
   if(me().planner&&me().role!=="liderazgo")wrap.appendChild(el("div","notice",I.spark+"<div>Tienes el permiso de <b>Planificador</b> activo: puedes crear tareas y armar el calendario de redes.</div>"));
   if(!can("createTask"))wrap.appendChild(permNotice("tasks"));
   wrap.appendChild(taskToolbar(true));
