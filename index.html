@@ -527,6 +527,8 @@ svg{display:block}
 .chk-row .cbox.on svg{opacity:1}
 .chk-row .ctxt{flex:1;font-size:13.5px}
 .chk-row.done .ctxt{text-decoration:line-through;color:var(--muted)}
+.chk-row .chk-del{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:8px;color:var(--faint);opacity:.75}
+.chk-row .chk-del:hover{color:var(--wine-2);background:var(--panel)}
 .tagchips{display:flex;flex-wrap:wrap;gap:7px}
 .tagchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px;background:var(--wine-soft);color:var(--wine-2);border:1px solid transparent}
 .tagchip button{display:grid;place-items:center;color:inherit;opacity:.7}
@@ -1627,10 +1629,12 @@ function openTaskDetail(id){
   body.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${statusPill(t.status)}${prioPill(t.priority)}<span class="pill" style="background:color-mix(in srgb,${AREAS[t.area].color} 15%,transparent);color:${AREAS[t.area].color}"><span class="d" style="background:${AREAS[t.area].color}"></span>${AREAS[t.area].label}</span><span class="pill" style="background:var(--panel-2);color:var(--muted)">${t.type}</span></div><p style="font-size:14px;line-height:1.6;margin:0 0 6px;white-space:pre-wrap">${linkify(t.desc)}</p>`;
   if((t.networks||[]).length){const nn=el("div");nn.style.cssText="display:flex;gap:7px;flex-wrap:wrap;margin:12px 0 2px";nn.innerHTML=t.networks.map(netPill).join("");body.appendChild(nn);}
   if(t.caption){const cap=el("div");cap.style.cssText="margin-top:14px";cap.innerHTML=`<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px">CAPTION / COPY</div><div style="font-size:13.5px;line-height:1.55;background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:12px 14px">${esc(t.caption)}</div>`;body.appendChild(cap);}
-  // checklist
-  const prog=checkProgress(t);
-  if(prog){const cl=el("div","d-sect");cl.innerHTML=`<div class="dt">Subtareas <span style="color:var(--faint)">${prog.done}/${prog.total}</span></div><div class="progress-bar" style="margin-bottom:12px"><div class="fill" style="width:${prog.pct}%"></div></div>`;
-    t.checklist.forEach((item,idx)=>{const r=el("div","chk-row"+(item.d?" done":""));r.innerHTML=`<div class="cbox${item.d?" on":""}">${I.check}</div><div class="ctxt">${esc(item.t)}</div>`;r.querySelector(".cbox").onclick=()=>{t.checklist[idx].d=!t.checklist[idx].d;saveTask(t);closeDrawer();openTaskDetail(id);};cl.appendChild(r);});body.appendChild(cl);}
+  // subtareas (ver, marcar, agregar y quitar — también el equipo)
+  {const prog=checkProgress(t);const cl=el("div","d-sect");
+    cl.innerHTML=`<div class="dt">Subtareas ${prog?`<span style="color:var(--faint)">${prog.done}/${prog.total}</span>`:""}</div>`+(prog?`<div class="progress-bar" style="margin-bottom:12px"><div class="fill" style="width:${prog.pct}%"></div></div>`:"");
+    (t.checklist||[]).forEach((item,idx)=>{const r=el("div","chk-row"+(item.d?" done":""));r.innerHTML=`<div class="cbox${item.d?" on":""}">${I.check}</div><div class="ctxt">${esc(item.t)}</div><button class="chk-del" title="Quitar">${I.trash.replace('<svg ','<svg width="14" height="14" ')}</button>`;r.querySelector(".cbox").onclick=()=>{t.checklist[idx].d=!t.checklist[idx].d;saveTask(t);closeDrawer();openTaskDetail(id);};r.querySelector(".chk-del").onclick=()=>{t.checklist.splice(idx,1);saveTask(t);closeDrawer();openTaskDetail(id);};cl.appendChild(r);});
+    const add=el("div","inline-add");const inp=el("input","input");inp.placeholder="Agregar subtarea…";const ab=el("button","btn btn-pri btn-sm",I.plus);const addFn=()=>{const v=inp.value.trim();if(!v)return;t.checklist=t.checklist||[];t.checklist.push({t:v,d:false});saveTask(t);closeDrawer();openTaskDetail(id);};ab.onclick=addFn;inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addFn();}});add.appendChild(inp);add.appendChild(ab);cl.appendChild(add);
+    body.appendChild(cl);}
   // responsables + fechas
   const rows=el("div");rows.style.marginTop="18px";const row=(k,ic,v)=>`<div class="d-row"><span class="k">${ic}${k}</span><span class="v">${v}</span></div>`;
   rows.innerHTML=row("Diseña",I.roles,`<div style="display:flex;align-items:center;gap:8px">${av(t.assignees.diseno)}${user(t.assignees.diseno).name}</div>`)+row("Redacta",I.chat,`<div style="display:flex;align-items:center;gap:8px">${av(t.assignees.copy)}${user(t.assignees.copy).name}</div>`)+row("Publica",I.arrow,`<div style="display:flex;align-items:center;gap:8px">${av(t.assignees.publica)}${user(t.assignees.publica).name}</div>`)+row("Entrega",I.clock,fmtDate(t.due))+row("Publicación",I.cal,fmtDate(t.publish));body.appendChild(rows);
