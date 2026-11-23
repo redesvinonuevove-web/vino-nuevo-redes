@@ -218,6 +218,9 @@ svg{display:block}
 .chip.on{color:var(--fg);border-color:var(--line-2);background:var(--panel)}
 .chip .swatch{width:10px;height:10px;border-radius:50%}
 .chip-mine.on{background:var(--gold);color:#2a1f00;border-color:transparent}
+.chip-serv svg{width:15px;height:15px}
+.chip-serv.on{background:#8b5cf6;color:#fff;border-color:transparent}
+.chip-serv.on svg{color:#fff}
 /* filtros desplegables (pro) */
 .filter-rail{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .fdrop{position:relative}
@@ -833,7 +836,7 @@ function commentComposer(t,reopen){
 }
 function uid(){return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(16).slice(2);}
 let S={users:[],tasks:[],ideas:[],meetings:[],services:[],monthlyServers:{},pastoralComments:[],publicComments:[],notifications:[],currentUserId:null,
-  ui:{view:"dashboard",calMode:"semana",filterArea:null,filterStatus:null,mine:false,monthOffset:0,taskView:"tarjetas",ideaFilter:null,ideaView:"tarjetas"}};
+  ui:{view:"dashboard",calMode:"semana",filterArea:null,filterStatus:null,mine:false,monthOffset:0,taskView:"tarjetas",ideaFilter:null,ideaView:"tarjetas",calOnlyServers:false}};
 function user(id){return S.users.find(u=>u.id===id)||{id,name:"—",sub:"",color:"#888",role:"equipo"};}
 function me(){return user(S.currentUserId)||{id:null,name:"—",role:"equipo",sub:"",planner:false};}
 function can(w){const r=me().role;
@@ -1270,7 +1273,9 @@ function viewCalendario(){
   seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{S.ui.calMode=b.dataset.m;render();});acts.appendChild(seg);
   if(can("createTask")){const sbv=el("button","btn btn-ghost",I.serve+"Servidores");sbv.onclick=()=>openServiceForm();acts.appendChild(sbv);const a=el("button","btn btn-pri",I.plus+"Nueva tarea");a.onclick=()=>openTaskForm();acts.appendChild(a);}
   head.appendChild(acts);wrap.appendChild(head);
-  wrap.appendChild(taskToolbar(false));
+  const servToggle=()=>{const b=el("button","chip chip-serv"+(S.ui.calOnlyServers?" on":""),I.serve.replace('<svg ','<svg width="15" height="15" ')+"Solo servidores");b.onclick=()=>{S.ui.calOnlyServers=!S.ui.calOnlyServers;render();};return b;};
+  if(S.ui.calOnlyServers){const bar=el("div","toolbar");const rail=el("div","filter-rail");rail.appendChild(servToggle());bar.appendChild(rail);wrap.appendChild(bar);}
+  else{const tb=taskToolbar(false);const rail=tb.querySelector(".filter-rail");if(rail)rail.appendChild(servToggle());wrap.appendChild(tb);}
   wrap.appendChild(S.ui.calMode==="semana"?calWeek():S.ui.calMode==="mes"?calMonth():calList());
   return wrap;
 }
@@ -1306,7 +1311,7 @@ function calWeek(){
   const wrap=el("div");
   wrap.appendChild(el("div","cal-legend",`<span class="lg">${I.roles.replace('<svg ','<svg width="13" height="13" ')} Diseña</span><span class="lg">${I.arrow.replace('<svg ','<svg width="13" height="13" ')} Publica</span><span>En cada pieza, el <b>1.º</b> avatar diseña y el <b>2.º</b> publica.</span>`));
   const box=el("div","cal-week");const start=new Date(today);const dow=(start.getDay()+6)%7;start.setDate(start.getDate()-dow);const tasks=visibleTasks();
-  for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const dISO=iso(d);const col=el("div","day-col");col.dataset.day=dISO;const isT=d.getTime()===today.getTime();col.innerHTML=`<div class="day-head${isT?' today':''}"><div class="dn">${DN[d.getDay()]}</div><div class="dd">${d.getDate()}</div></div>`;const slot=el("div","slot");const dt=tasks.filter(t=>t.publish===dISO);dt.forEach(t=>{const mt=miniTask(t);calDrag(mt,t.id);slot.appendChild(mt);});const dsv=S.services.filter(s=>s.date===dISO);dsv.forEach(s=>slot.appendChild(miniService(s)));if(can("createTask"))slot.appendChild(addDayButton(dISO,(dt.length||dsv.length)?"":"Agregar"));else if(!dt.length&&!dsv.length){const e=el("div");e.style.cssText="font-size:11px;color:var(--faint);text-align:center;padding:8px 0";e.textContent="—";slot.appendChild(e);}col.appendChild(slot);box.appendChild(col);}
+  for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const dISO=iso(d);const col=el("div","day-col");col.dataset.day=dISO;const isT=d.getTime()===today.getTime();col.innerHTML=`<div class="day-head${isT?' today':''}"><div class="dn">${DN[d.getDay()]}</div><div class="dd">${d.getDate()}</div></div>`;const slot=el("div","slot");const dt=S.ui.calOnlyServers?[]:tasks.filter(t=>t.publish===dISO);dt.forEach(t=>{const mt=miniTask(t);calDrag(mt,t.id);slot.appendChild(mt);});const dsv=S.services.filter(s=>s.date===dISO);dsv.forEach(s=>slot.appendChild(miniService(s)));if(can("createTask"))slot.appendChild(addDayButton(dISO,(dt.length||dsv.length)?"":"Agregar"));else if(!dt.length&&!dsv.length){const e=el("div");e.style.cssText="font-size:11px;color:var(--faint);text-align:center;padding:8px 0";e.textContent="—";slot.appendChild(e);}col.appendChild(slot);box.appendChild(col);}
   wrap.appendChild(box);return wrap;
 }
 function calMonth(){
@@ -1318,14 +1323,14 @@ function calMonth(){
   const wr=el("div","weekday-row");["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].forEach(x=>wr.appendChild(el("span","",x)));wrap.appendChild(wr);
   const grid=el("div","cal-month");const firstDow=(base.getDay()+6)%7,dim=new Date(base.getFullYear(),base.getMonth()+1,0).getDate();const tasks=visibleTasks();
   for(let i=0;i<firstDow;i++)grid.appendChild(el("div","mcell dim"));
-  for(let dn=1;dn<=dim;dn++){const d=new Date(base.getFullYear(),base.getMonth(),dn);const dISO=iso(d);const isT=d.getTime()===today.getTime();const c=el("div","mcell"+(isT?" is-today":""));c.dataset.day=dISO;c.innerHTML=`<div class="mnum">${dn}</div>`;const dt=tasks.filter(t=>t.publish===dISO);dt.slice(0,3).forEach(t=>{const dot=el("div","mdot");dot.innerHTML=`<span class="d" style="background:${STATUS[t.status].color}"></span><span style="${doneStyle(t)}">${esc(t.title)}</span>`;dot.onclick=e=>{e.stopPropagation();if(_calDragged)return;openTaskDetail(t.id);};calDrag(dot,t.id);c.appendChild(dot);});if(dt.length>3)c.appendChild(el("div","mdot","+"+(dt.length-3)+" más"));S.services.filter(s=>s.date===dISO).forEach(s=>{const sdot=el("div","mdot");sdot.innerHTML=`<span class="d" style="background:#8b5cf6"></span><span style="color:#8b5cf6;font-weight:700">Servidores</span>`;sdot.onclick=e=>{e.stopPropagation();S.ui.view="servicios";render();};c.appendChild(sdot);});if(can("createTask")){c.classList.add("clickable");const ap=el("button","add-plus",I.plus);ap.setAttribute("aria-label","Agregar pieza");ap.onclick=e=>{e.stopPropagation();addOn(dISO);};c.appendChild(ap);c.onclick=e=>{if(_calDragged)return;if(e.target.closest(".mdot"))return;addOn(dISO);};}grid.appendChild(c);}
+  for(let dn=1;dn<=dim;dn++){const d=new Date(base.getFullYear(),base.getMonth(),dn);const dISO=iso(d);const isT=d.getTime()===today.getTime();const c=el("div","mcell"+(isT?" is-today":""));c.dataset.day=dISO;c.innerHTML=`<div class="mnum">${dn}</div>`;const dt=S.ui.calOnlyServers?[]:tasks.filter(t=>t.publish===dISO);dt.slice(0,3).forEach(t=>{const dot=el("div","mdot");dot.innerHTML=`<span class="d" style="background:${STATUS[t.status].color}"></span><span style="${doneStyle(t)}">${esc(t.title)}</span>`;dot.onclick=e=>{e.stopPropagation();if(_calDragged)return;openTaskDetail(t.id);};calDrag(dot,t.id);c.appendChild(dot);});if(dt.length>3)c.appendChild(el("div","mdot","+"+(dt.length-3)+" más"));S.services.filter(s=>s.date===dISO).forEach(s=>{const sdot=el("div","mdot");sdot.innerHTML=`<span class="d" style="background:#8b5cf6"></span><span style="color:#8b5cf6;font-weight:700">Servidores</span>`;sdot.onclick=e=>{e.stopPropagation();S.ui.view="servicios";render();};c.appendChild(sdot);});if(can("createTask")){c.classList.add("clickable");const ap=el("button","add-plus",I.plus);ap.setAttribute("aria-label","Agregar pieza");ap.onclick=e=>{e.stopPropagation();addOn(dISO);};c.appendChild(ap);c.onclick=e=>{if(_calDragged)return;if(e.target.closest(".mdot"))return;addOn(dISO);};}grid.appendChild(c);}
   wrap.appendChild(grid);return wrap;
 }
 function calListSecLabel(txt){const d=el("div");d.style.cssText="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);margin:6px 2px 10px";d.textContent=txt;return d;}
 function calList(){
   const wrap=el("div");const tasks=visibleTasks().slice().sort((a,b)=>new Date(a.publish)-new Date(b.publish));
   const groups={};tasks.forEach(t=>{(groups[t.publish]=groups[t.publish]||[]).push(t);});
-  const keys=Object.keys(groups).sort();
+  const keys=S.ui.calOnlyServers?[]:Object.keys(groups).sort();
   const svcs=S.services.slice().filter(s=>s.date).sort((a,b)=>new Date(a.date)-new Date(b.date));
 
   /* ── Servidores (lista aparte, para que no se mezcle con el contenido) ── */
@@ -1337,6 +1342,10 @@ function calList(){
   }
 
   /* ── Contenido (piezas de redes) ── */
+  if(S.ui.calOnlyServers){
+    if(!svcs.length){wrap.appendChild(el("div","empty",I.serve+"<h3>Sin servidores agendados</h3><p>Agenda quién sirve en redes y aparecerán aquí.</p>"));if(can("createTask")){const holder=el("div");holder.style.cssText="max-width:300px;margin:0 auto";const a=el("button","add-day",I.plus+"<span>Agendar servidores</span>");a.onclick=()=>openServiceForm();holder.appendChild(a);wrap.appendChild(holder);}}
+    return wrap;
+  }
   if(svcs.length&&keys.length)wrap.appendChild(calListSecLabel("Contenido"));
   if(!keys.length){
     wrap.appendChild(el("div","empty",I.cal+"<h3>Sin publicaciones</h3><p>No hay piezas con estos filtros.</p>"));
